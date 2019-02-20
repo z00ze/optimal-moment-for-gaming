@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# OMFG Enviroment
+credentials-fitbitapp.data
+credentials-db.data
