@@ -80,6 +80,21 @@ class omfg(object):
                 return str(e.code)
             except urllib.error.URLError as e:
                 return str(e.code)
+    
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def POST(self, var = None):
+        if(var == 'sleep'):
+            
+            data = json.loads(cherrypy.request.body.read().decode('utf-8'))
+            
+            return_value = dbhandler.getSleep(data)
+            if(return_value != False):
+                return return_value
+            else:
+                return "error"
+            
+            
             
 
 if __name__ == '__main__':
@@ -94,13 +109,6 @@ if __name__ == '__main__':
                 'tools.staticfile.on': True,
                 'tools.staticfile.filename': os.path.join(current_dir, 'favicon.ico'),
             }
-        #'/scripts': {'tools.staticdir.on': True,
-        #            'tools.staticdir.dir': os.path.join(current_dir, 'scripts')},
-        #'/icons': {'tools.staticdir.on': True,
-        #              'tools.staticdir.dir': os.path.join(current_dir, 'icons')},
-        #'/styles': {'tools.staticdir.on': True,
-        #            'tools.staticdir.dir': os.path.join(current_dir, 'styles')},
-
     }
 
     cherrypy.config.update(

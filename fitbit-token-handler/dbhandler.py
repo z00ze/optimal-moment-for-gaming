@@ -1,4 +1,5 @@
 import mysql.connector
+import json
 from datetime import datetime
 
 # CREDENTIALS
@@ -17,6 +18,7 @@ query_getAccesstoken = ("SELECT userid, access_token FROM tokens WHERE userid = 
 
 query_getSleeplessIds = ("SELECT userid FROM tokens WHERE userid NOT IN (SELECT userid FROM sleepdata)")
 query_addSleepdata = ("INSERT IGNORE INTO sleepdata (uniqueid, userid, datetime, data) VALUES (%s, %s, %s, %s)")
+query_getSleep = ("SELECT data FROM fitbittokens.sleepdata WHERE userid = %s and datetime = %s")
 
 ##################################################################    
 # ToOKENS                                                        #
@@ -54,6 +56,8 @@ def getAccesstoken(userid):
 ##################################################################    
 # SLEEP DATA                                                     #
 ##################################################################
+
+# Adds sleep data to DB
 def addSleepdata(data):
     
     global query_addSleepdata
@@ -65,14 +69,43 @@ def addSleepdata(data):
         return True
     
     except Exception as e:
-        print(str(e) + " addsleepdata error")
+        print(str(e) + " query_addSleepdata error")
         return False
 
+# Returns those who have given access to their data but do not have sleep data yet in the DB
 def getSleepless():
-    cursor.execute(query_getSleeplessIds)
-    cnx.commit()
-    ids = []
-    for userid, in cursor:
-        ids.append(userid)
-    return ids
+    
+    global query_getSleeplessIds
+    
+    try:
+        cursor.execute(query_getSleeplessIds)
+        cnx.commit()
+        ids = []
+        for userid, in cursor:
+            ids.append(userid)
+        return ids
+    except Exception as e:
+        print(str(e) + " query_getSleeplessIds error")
+        return False
 
+# Returns sleep data by datetime.
+def getSleep(data):
+    
+    global query_getSleep
+    
+    try:
+        maindata = (data['userid'], data['datetime'])
+        cursor.execute(query_getSleep, maindata)
+        cnx.commit()
+        if(cursor.rowcount == 0):
+            # TODO :
+            #       Fetching data from FITBIT if data is not in database
+            #       Checking if user has given access to the data
+            print("0")
+        for val, in cursor:
+            return json.loads(val)
+        return False
+    except Exception as e:
+        print(str(e) + " query_getSleep error")
+        return False
+    
