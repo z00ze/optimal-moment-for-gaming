@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 import requests
 from cherrypy.lib.static import serve_file
 
+# DATABASE
 import dbhandler
 
 # CREDENTIALS
@@ -67,40 +68,14 @@ class omfg(object):
                 headers = {'Content-type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + base64.b64encode(cres).decode()}
                 request = Request(url, urllib.parse.urlencode(request_params).encode(), headers=headers)
                 response = json.loads(urlopen(request).read().decode())
-                print(response)
                 
-                # DATE RANGE
-                startdate = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
-                enddate = datetime.today().strftime('%Y-%m-%d')
+                response['datetime'] = datetime.now()
                 
-                # SLEEP
-                url = 'https://api.fitbit.com/1.2/user/-/sleep/date/' + startdate + '/'+ enddate +'.json'
-                httpreq = Request(url=url)
-                httpreq.add_header('Authorization', 'Bearer ' + response['access_token'])
-                access_token = response['access_token']
-                sleep = urllib.request.urlopen(httpreq).read()
-                
-                # HEART RATE
-                url = 'https://api.fitbit.com/1/user/-/activities/heart/date/' + startdate + '/'+ enddate +'.json'
-                httpreq = Request(url=url)
-                httpreq.add_header('Authorization', 'Bearer ' + response['access_token'])
-                access_token = response['access_token']
-                heartrate = urllib.request.urlopen(httpreq).read()
-
-                return '''
-                        <html>
-                            <head>
-                                <script type="text/javascript">
-                                console.log({response});
-                                console.log({heartrate})
-                                </script>
-                            </head>
-                            <body>
-                            {token}
-                            </body>
-                        </html>
-                '''.format(response=sleep.decode(), heartrate=heartrate.decode(), token=access_token)
-            
+                if(dbhandler.addTokens(response)):
+                    return "ok"
+                else:
+                    return "fail"
+               
             except urllib.error.HTTPError as e:
                 return str(e.code)
             except urllib.error.URLError as e:
