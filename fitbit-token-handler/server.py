@@ -19,12 +19,16 @@ from cherrypy.lib.static import serve_file
 
 # DATABASE
 import dbhandler
+# ERROR HANDLER
+import errorhandler as err
 
 # CREDENTIALS
 credentials = open('credentials-fitbitapp.data', 'r').read().split('\n')
 client_id = credentials[0]
 client_secret = credentials[1]
 
+def fail():
+    return { "success": False }
 
 @cherrypy.expose
 class omfg(object):
@@ -71,15 +75,15 @@ class omfg(object):
                 
                 response['datetime'] = datetime.now()
                 
-                if(dbhandler.addTokens(response)):
-                    return "ok"
+                if(dbhandler.addTokens(response)['success']):
+                    return { "success": True }
                 else:
-                    return "fail"
+                    return err.fail()
                
             except urllib.error.HTTPError as e:
-                return str(e.code)
+                return err.fail(str(e.code))
             except urllib.error.URLError as e:
-                return str(e.code)
+                return err.fail(str(e.code))
     
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -88,15 +92,16 @@ class omfg(object):
             
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
             
+            if('userid' not in data and 'datetime' not in data):
+                err.fail()
+            
             return_value = dbhandler.getSleep(data)
-            if(return_value != False):
+            if(return_value['success'] == True):
                 return return_value
             else:
-                return "error"
+                return err.fail()
             
             
-            
-
 if __name__ == '__main__':
     current_dir = os.path.dirname(os.path.abspath(__file__))
     conf = {

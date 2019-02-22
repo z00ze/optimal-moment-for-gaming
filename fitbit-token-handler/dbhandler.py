@@ -1,6 +1,7 @@
 import mysql.connector
 import json
 from datetime import datetime
+import errorhandler as err
 
 # CREDENTIALS
 credentials = open('credentials-db.data', 'r').read().split('\n')
@@ -44,13 +45,14 @@ def getAccesstoken(userid):
     try:
         cursor.execute(query_getAccesstoken, (userid,))
         cnx.commit()
-        
+        if(cursor.rowcount == 0):
+            return err.fail()
         for (user_id, accesstoken) in cursor:
-            return {"userid": user_id, "access_token": accesstoken}
+            return {"success": True, "userid": user_id, "access_token": accesstoken}
         
     except Exception as e:
         print(e)
-        return False
+        return err.fail()
     
     
 ##################################################################    
@@ -70,7 +72,7 @@ def addSleepdata(data):
     
     except Exception as e:
         print(str(e) + " query_addSleepdata error")
-        return False
+        return { "success": False, "errorcode": str(e.code) }
 
 # Returns those who have given access to their data but do not have sleep data yet in the DB
 def getSleepless():
@@ -80,13 +82,19 @@ def getSleepless():
     try:
         cursor.execute(query_getSleeplessIds)
         cnx.commit()
-        ids = []
+        data = {"ids": [], "success": True}
+        
+        if(cursor.rowcount == 0):
+            return err.fail()
+        
         for userid, in cursor:
-            ids.append(userid)
-        return ids
+            data['ids'].append(userid)
+            
+        return data
+    
     except Exception as e:
         print(str(e) + " query_getSleeplessIds error")
-        return False
+        return err.fail(str(e.code))
 
 # Returns sleep data by datetime.
 def getSleep(data):
@@ -97,15 +105,20 @@ def getSleep(data):
         maindata = (data['userid'], data['datetime'])
         cursor.execute(query_getSleep, maindata)
         cnx.commit()
+        
         if(cursor.rowcount == 0):
+            print(getAccesstoken(data['userid']))
             # TODO :
             #       Fetching data from FITBIT if data is not in database
             #       Checking if user has given access to the data
             print("0")
+            
         for val, in cursor:
-            return json.loads(val)
-        return False
+            return {"success": True, "data" : json.loads(val)}
+        
+        return err.fail()
+    
     except Exception as e:
         print(str(e) + " query_getSleep error")
-        return False
+        return err.fail(str(e))
     
