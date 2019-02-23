@@ -20,6 +20,7 @@ query_getAccesstoken = ("SELECT userid, access_token FROM tokens WHERE userid = 
 query_getSleeplessIds = ("SELECT userid FROM tokens WHERE userid NOT IN (SELECT userid FROM sleepdata)")
 query_addSleepdata = ("INSERT IGNORE INTO sleepdata (uniqueid, userid, datetime, data) VALUES (%s, %s, %s, %s)")
 query_getSleep = ("SELECT data FROM fitbittokens.sleepdata WHERE userid = %s and datetime = %s")
+query_getExpired = ("SELECT userid, refresh_token FROM tokens WHERE updated <= now() - INTERVAL 6 HOUR")
 
 ##################################################################    
 # ToOKENS                                                        #
@@ -46,10 +47,28 @@ def getAccesstoken(userid):
         cursor.execute(query_getAccesstoken, (userid,))
         cnx.commit()
         if(cursor.rowcount == 0):
-            return err.fail()
+            return err.fail("no user")
         for (user_id, accesstoken) in cursor:
             return {"success": True, "userid": user_id, "access_token": accesstoken}
         
+    except Exception as e:
+        print(e)
+        return err.fail()
+    
+def getExpired():
+    
+    global query_getExpired
+    
+    try:
+        cursor.execute(query_getExpired)
+        cnx.commit()
+        if(cursor.rowcount == 0):
+            return err.fail("no expired users")
+        expired_users = {"users": [], "success": True}
+        for (userid, refresh_token) in cursor:
+            expired_users['users'].append({"userid": userid, "refresh_token": refresh_token})
+        return expired_users
+    
     except Exception as e:
         print(e)
         return err.fail()
@@ -107,7 +126,7 @@ def getSleep(data):
         cnx.commit()
         
         if(cursor.rowcount == 0):
-            print(getAccesstoken(data['userid']))
+            return(getAccesstoken(data['userid']))
             # TODO :
             #       Fetching data from FITBIT if data is not in database
             #       Checking if user has given access to the data

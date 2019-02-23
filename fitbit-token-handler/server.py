@@ -96,10 +96,7 @@ class omfg(object):
                 err.fail()
             
             return_value = dbhandler.getSleep(data)
-            if(return_value['success'] == True):
-                return return_value
-            else:
-                return err.fail()
+            return return_value
             
             
 if __name__ == '__main__':
