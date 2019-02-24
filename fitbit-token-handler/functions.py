@@ -29,32 +29,39 @@ client_secret = credentials[1]
 def import_sleep(sleepless, date=None):
     # SLEEP
     data = dbhandler.getAccesstoken(sleepless)
-
+    
+    startdate = ""
+    enddate = ""
+    url = ""
+    
     if(date == None):
         startdate = (datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d')
         enddate = datetime.today().strftime('%Y-%m-%d')
 
         url = 'https://api.fitbit.com/1.2/user/-/sleep/date/' + startdate + '/'+ enddate +'.json'
-        request = Request(url)
-        request.add_header('Authorization', 'Bearer ' + data['access_token'])
-        sleeps = json.loads(urllib.request.urlopen(request).read().decode('utf-8'))['sleep']
-
-        for sleep in sleeps:
-            night = {}
-            
-            # .update
-            # .update
-            night['userid'] = data['userid']
-            night['uniqueid'] = str(hashlib.sha256(bytes(night['userid'] + json.dumps(sleep),'utf-8')).hexdigest())
-            night['data'] = json.dumps(sleep)
-            night['datetime'] = sleep['dateOfSleep']
-            if(dbhandler.addSleepdata(night)):
-                print("OK")
-            else:
-                print("FAIL")
     else:
-        # one sleep
-        print("r")
+        url = 'https://api.fitbit.com/1.2/user/-/sleep/date/'+ date +'.json'
+    
+    request = Request(url)
+    
+    request.add_header('Authorization', 'Bearer ' + data.get('access_token', ''))
+    sleeps = json.loads(urllib.request.urlopen(request).read().decode('utf-8'))
+    for sleep in sleeps.get('sleep', []):
+        night = {}
+        # .update
+        # .update
+        night['user_id'] = data['user_id']
+        night['uniqueid'] = str(hashlib.sha256(bytes(night['user_id'] + json.dumps(sleep),'utf-8')).hexdigest())
+        
+        night['data'] = json.dumps(sleep)
+        night['datetime'] = sleep['dateOfSleep']
+        
+        thenight = dbhandler.addSleepdata(night)
+        if(not thenight.get('success', False)):
+            return thenight
+    return {"success": True}
+    
+        
         
 ##################################################################    
 # Refresh tokens for user                                        #
@@ -70,13 +77,12 @@ def refresh_token(user):
         cres = (client_id + ":" + client_secret).encode()
         headers = {'Content-type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + base64.b64encode(cres).decode()}
         request = Request(url, urllib.parse.urlencode(request_params).encode(), headers=headers)
-        response = json.loads(urlopen(request).read().decode())
-
-        print(response)
+        
+        response = json.loads(urllib.request.urlopen(request).read().decode('utf-8'))
+        
         dbhandler.updateTokens(response)
 
-        
     except urllib.error.HTTPError as e:
-        return err.fail(str(e.code))
+        return err.fail(str(e))
     except urllib.error.URLError as e:
-        return err.fail(str(e.code))
+        return err.fail(str(e))

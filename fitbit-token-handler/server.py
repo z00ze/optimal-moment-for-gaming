@@ -102,9 +102,9 @@ class omfg(object):
             
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
             
-            if('userid' not in data and 'datetime' not in data):
+            if('user_id' not in data and 'datetime' not in data):
                 err.fail()
-
+            
             return dbhandler.getSleep(data)
             
             

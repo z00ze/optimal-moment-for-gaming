@@ -5,6 +5,7 @@ import mysql.connector
 import json
 from datetime import datetime
 import errorhandler as err
+import functions
 
 # CREDENTIALS
 credentials = open('credentials-db.data', 'r').read().split('\n')
@@ -17,16 +18,16 @@ cursor = cnx.cursor(buffered=True)
 
 # BASIC QUERIES
 
-query_addTokens = ("INSERT IGNORE INTO tokens (userid, access_token, refresh_token, expires_in, updated) VALUES (%s, %s, %s, %s, %s)")
+query_addTokens = ("INSERT IGNORE INTO tokens (user_id, access_token, refresh_token, expires_in, updated) VALUES (%s, %s, %s, %s, %s)")
 
-query_updateTokens = ("UPDATE tokens SET access_token = %s, refresh_token = %s, expires_in = %s, updated = now() WHERE userid = %s")
+query_updateTokens = ("UPDATE tokens SET access_token = %s, refresh_token = %s, expires_in = %s, updated = now() WHERE user_id = %s")
 
-query_getAccesstoken = ("SELECT userid, access_token FROM tokens WHERE userid = %s")
+query_getAccesstoken = ("SELECT user_id, access_token FROM tokens WHERE user_id = %s")
 
-query_getSleeplessIds = ("SELECT userid FROM tokens WHERE userid NOT IN (SELECT userid FROM sleepdata)")
-query_addSleepdata = ("INSERT IGNORE INTO sleepdata (uniqueid, userid, datetime, data) VALUES (%s, %s, %s, %s)")
-query_getSleep = ("SELECT data FROM fitbittokens.sleepdata WHERE userid = %s and datetime = %s")
-query_getExpired = ("SELECT userid, refresh_token FROM tokens WHERE updated <= now() - INTERVAL 6 HOUR")
+query_getSleeplessIds = ("SELECT user_id FROM tokens WHERE user_id NOT IN (SELECT user_id FROM sleepdata)")
+query_addSleepdata = ("INSERT IGNORE INTO sleepdata (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
+query_getSleep = ("SELECT data FROM fitbittokens.sleepdata WHERE user_id = %s and datetime = %s")
+query_getExpired = ("SELECT user_id, refresh_token FROM tokens WHERE updated <= now() - INTERVAL 6 HOUR")
 
 ##################################################################    
 # TOKENS                                                        #
@@ -44,7 +45,6 @@ def addTokens(data):
         return {'success': True}
     
     except Exception as e:
-        print(e)
         return err.fail(str(e))
     
 # updates tokens in database
@@ -56,19 +56,25 @@ def updateTokens(data):
     cursor.execute(query_updateTokens, maindata)
     cnx.commit()
         
-# returns accesstoken by userid
-def getAccesstoken(userid):
+# returns accesstoken by user_id
+def getAccesstoken(data):
     
     global query_getAccesstoken
     
     try:
-        cursor.execute(query_getAccesstoken, (userid,))
+        cursor.execute(query_getAccesstoken, (data.get('user_id',''),))
         cnx.commit()
         if(cursor.rowcount == 0):
-            return err.fail("no user")
-        for (user_id, accesstoken) in cursor:
-            return {"success": True, "userid": user_id, "access_token": accesstoken}
-        
+            return err.fail('no user')
+
+        for (user_id, access_token) in cursor:
+            asd = {
+                    'success': True, 
+                    'user_id': user_id,
+                    'access_token': access_token
+                    }
+            return asd
+
     except Exception as e:
         print(e)
         return err.fail()
@@ -84,12 +90,12 @@ def getExpired():
         if(cursor.rowcount == 0):
             return err.fail("no expired users")
         expired_users = {"users": [], "success": True}
-        for (userid, refresh_token) in cursor:
-            expired_users['users'].append({"userid": userid, "refresh_token": refresh_token})
+        for (user_id, refresh_token) in cursor:
+            expired_users['users'].append({"user_id": user_id, "refresh_token": refresh_token})
         return expired_users
     
     except Exception as e:
-        print(e)
+        print()
         return err.fail()
     
     
@@ -103,14 +109,14 @@ def addSleepdata(data):
     global query_addSleepdata
     
     try:
-        maindata = (data['uniqueid'], data['userid'], data['datetime'], data['data'])
+        maindata = (data['uniqueid'], data['user_id'], data['datetime'], data['data'])
         cursor.execute(query_addSleepdata, maindata)
         cnx.commit()
-        return True
+        return {"success": True}
     
     except Exception as e:
         print(str(e) + " query_addSleepdata error")
-        return { "success": False, "errorcode": str(e.code) }
+        return err.fail(str(e.code))
 
 # Returns those who have given access to their data but do not have sleep data yet in the DB
 def getSleepless():
@@ -125,8 +131,8 @@ def getSleepless():
         if(cursor.rowcount == 0):
             return err.fail()
         
-        for userid, in cursor:
-            data['ids'].append(userid)
+        for user_id, in cursor:
+            data['ids'].append(user_id)
             
         return data
     
@@ -140,19 +146,33 @@ def getSleep(data):
     global query_getSleep
     
     try:
-        maindata = (data['userid'], data['datetime'])
+        maindata = (data['user_id'], data['datetime'])
         cursor.execute(query_getSleep, maindata)
         cnx.commit()
         
+        # Fetch the sleep data if not found in db
         if(cursor.rowcount == 0):
-            return(getAccesstoken(data['userid']))
-            # TODO :
-            #       Fetching data from FITBIT if data is not in database
-            #       Checking if user has given access to the data
-            print("0")
+            
+            access = getAccesstoken(data)
+            data.update({'access_token': access.get('access_token','')})
+            if(access.get('success', False)):
+
+                if(functions.import_sleep(data, data['datetime']).get('success', False)):
+                    
+                    # Makes new request to db if the record would be now there.
+                    try:
+                        maindata = (data['user_id'], data['datetime'])
+    
+                        cursor.execute(query_getSleep, maindata)
+                        cnx.commit()
+            
+                    except Exception as e:
+                        print(str(e) + " query_getSleep error")
+                        return err.fail(str(e))
             
         for val, in cursor:
             return {"success": True, "data" : json.loads(val)}
+        
         
         return err.fail()
     

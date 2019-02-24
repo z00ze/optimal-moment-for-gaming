@@ -6,8 +6,8 @@ def sleepless():
     sleepless = dbhandler.getSleepless()
     
     if(sleepless.get('success', False)):
-        for userid in sleepless.get('ids', []):
-            functions.import_sleep(userid)
+        for user_id in sleepless.get('ids', []):
+            functions.import_sleep(user_id)
 
 def refreshTokens():
 
