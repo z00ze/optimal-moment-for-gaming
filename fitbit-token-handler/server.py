@@ -19,6 +19,8 @@ from cherrypy.lib.static import serve_file
 
 # DATABASE
 import dbhandler
+# DEMONHANDLER
+import demonhandler
 # ERROR HANDLER
 import errorhandler as err
 
@@ -41,11 +43,11 @@ class omfg(object):
         global client_id
         global client_secret
         
-        #
-        # Get permission for data
-        # 
+        ##################################################################    
+        # Endpoint for giving user consent to use their fitbit data.     #
+        ##################################################################
         
-        if(var == 'getData'):
+        if(var == 'fitbit-permission'):
             params = {
                 'client_id' : client_id,
                 'response_type' : 'code',
@@ -55,9 +57,11 @@ class omfg(object):
             url = 'https://www.fitbit.com/oauth2/authorize?'
             raise cherrypy.HTTPRedirect(url + urllib.parse.urlencode(params))
         
-        #
-        # Callback
-        #
+        ##################################################################    
+        # Callback from fitbit servers after user has given consent.     #
+        ##################################################################
+        
+        # To do :  scope checks.
         
         if(var == 'fitbit-callback'):
             request_params = {
@@ -74,16 +78,22 @@ class omfg(object):
                 response = json.loads(urlopen(request).read().decode())
                 
                 response['datetime'] = datetime.now()
-                
-                if(dbhandler.addTokens(response)['success']):
-                    return { "success": True }
-                else:
-                    return err.fail()
+                dbresponse = dbhandler.addTokens(response)
+                if(dbresponse.get('success', False)):
+                    demonhandler.sleepless()
+                return dbresponse
                
             except urllib.error.HTTPError as e:
                 return err.fail(str(e.code))
             except urllib.error.URLError as e:
                 return err.fail(str(e.code))
+    
+    
+    ##################################################################    
+    # End point to get sleep data for one day.                       #
+    ##################################################################
+    
+    # To do : Request data for day range.
     
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -94,9 +104,8 @@ class omfg(object):
             
             if('userid' not in data and 'datetime' not in data):
                 err.fail()
-            
-            return_value = dbhandler.getSleep(data)
-            return return_value
+
+            return dbhandler.getSleep(data)
             
             
 if __name__ == '__main__':

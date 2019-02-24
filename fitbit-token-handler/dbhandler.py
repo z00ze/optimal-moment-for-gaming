@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+#coding=utf-8
+
 import mysql.connector
 import json
 from datetime import datetime
@@ -15,6 +18,9 @@ cursor = cnx.cursor(buffered=True)
 # BASIC QUERIES
 
 query_addTokens = ("INSERT IGNORE INTO tokens (userid, access_token, refresh_token, expires_in, updated) VALUES (%s, %s, %s, %s, %s)")
+
+query_updateTokens = ("UPDATE tokens SET access_token = %s, refresh_token = %s, expires_in = %s, updated = now() WHERE userid = %s")
+
 query_getAccesstoken = ("SELECT userid, access_token FROM tokens WHERE userid = %s")
 
 query_getSleeplessIds = ("SELECT userid FROM tokens WHERE userid NOT IN (SELECT userid FROM sleepdata)")
@@ -23,8 +29,10 @@ query_getSleep = ("SELECT data FROM fitbittokens.sleepdata WHERE userid = %s and
 query_getExpired = ("SELECT userid, refresh_token FROM tokens WHERE updated <= now() - INTERVAL 6 HOUR")
 
 ##################################################################    
-# ToOKENS                                                        #
+# TOKENS                                                        #
 ##################################################################
+
+# add tokens to database
 def addTokens(data):
     
     global query_addTokens
@@ -33,12 +41,22 @@ def addTokens(data):
         maindata = (data['user_id'], data['access_token'], data['refresh_token'], data['expires_in'], data['datetime'])
         cursor.execute(query_addTokens, maindata)
         cnx.commit()
-        return True
+        return {'success': True}
     
     except Exception as e:
         print(e)
-        return False
+        return err.fail(str(e))
     
+# updates tokens in database
+def updateTokens(data):
+    
+    global query_updateTokens
+    
+    maindata = (data.get('access_token', ""), data.get('refresh_token', ""), data.get('expires_in', 0), data.get('user_id', ""))
+    cursor.execute(query_updateTokens, maindata)
+    cnx.commit()
+        
+# returns accesstoken by userid
 def getAccesstoken(userid):
     
     global query_getAccesstoken
@@ -54,7 +72,8 @@ def getAccesstoken(userid):
     except Exception as e:
         print(e)
         return err.fail()
-    
+
+# returns those users who are about to have access token expired
 def getExpired():
     
     global query_getExpired
