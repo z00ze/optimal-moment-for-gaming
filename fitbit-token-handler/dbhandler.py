@@ -18,16 +18,21 @@ cursor = cnx.cursor(buffered=True)
 
 # BASIC QUERIES
 
+# Tokens
 query_addTokens = ("INSERT IGNORE INTO tokens (user_id, access_token, refresh_token, expires_in, updated) VALUES (%s, %s, %s, %s, %s)")
-
 query_updateTokens = ("UPDATE tokens SET access_token = %s, refresh_token = %s, expires_in = %s, updated = now() WHERE user_id = %s")
-
 query_getAccesstoken = ("SELECT user_id, access_token FROM tokens WHERE user_id = %s")
+query_getExpired = ("SELECT user_id, refresh_token FROM tokens WHERE updated <= now() - INTERVAL 6 HOUR")
 
+# Sleep
 query_getSleeplessIds = ("SELECT user_id FROM tokens WHERE user_id NOT IN (SELECT user_id FROM sleepdata)")
 query_addSleepdata = ("INSERT IGNORE INTO sleepdata (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
-query_getSleep = ("SELECT data FROM fitbittokens.sleepdata WHERE user_id = %s and datetime = %s")
-query_getExpired = ("SELECT user_id, refresh_token FROM tokens WHERE updated <= now() - INTERVAL 6 HOUR")
+query_getSleep = ("SELECT data FROM sleepdata WHERE user_id = %s and datetime = %s")
+
+# HR
+query_getSleep = ("SELECT data FROM sleepdata WHERE user_id = %s and datetime = %s")
+
+
 
 ##################################################################    
 # TOKENS                                                        #
@@ -76,8 +81,7 @@ def getAccesstoken(data):
             return asd
 
     except Exception as e:
-        print(e)
-        return err.fail()
+        return err.fail(str(e))
 
 # returns those users who are about to have access token expired
 def getExpired():
@@ -144,6 +148,50 @@ def getSleepless():
 def getSleep(data):
     
     global query_getSleep
+    
+    try:
+        maindata = (data['user_id'], data['datetime'])
+        cursor.execute(query_getSleep, maindata)
+        cnx.commit()
+        
+        # Fetch the sleep data if not found in db
+        if(cursor.rowcount == 0):
+            
+            access = getAccesstoken(data)
+            data.update({'access_token': access.get('access_token','')})
+            if(access.get('success', False)):
+
+                if(functions.import_sleep(data, data['datetime']).get('success', False)):
+                    
+                    # Makes new request to db if the record would be now there.
+                    try:
+                        maindata = (data['user_id'], data['datetime'])
+    
+                        cursor.execute(query_getSleep, maindata)
+                        cnx.commit()
+            
+                    except Exception as e:
+                        print(str(e) + " query_getSleep error")
+                        return err.fail(str(e))
+            
+        for val, in cursor:
+            return {"success": True, "data" : json.loads(val)}
+        
+        
+        return err.fail()
+    
+    except Exception as e:
+        print(str(e) + " query_getSleep error")
+        return err.fail(str(e))
+    
+##################################################################    
+# HEARTRATE DATA                                                 #
+##################################################################
+
+# Returns sleep data by datetime.
+def getHr(data):
+    
+    global query_getHr
     
     try:
         maindata = (data['user_id'], data['datetime'])

@@ -101,11 +101,26 @@ class omfg(object):
         if(var == 'sleep'):
             
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
+            print(data)
+            if('user_id' not in data and 'datetime' not in data):
+                err.fail()
+
+            return dbhandler.getSleep(data)
+            
+    ##################################################################    
+    # End point to get heartrate data for one day.                   #
+    ##################################################################
+    
+    # To do : Request data for day range.
+    
+        if(var == 'heartrate'):
+            return ":D"
+            data = json.loads(cherrypy.request.body.read().decode('utf-8'))
             
             if('user_id' not in data and 'datetime' not in data):
                 err.fail()
             
-            return dbhandler.getSleep(data)
+            return dbhandler.getHr(data)
             
             
 if __name__ == '__main__':

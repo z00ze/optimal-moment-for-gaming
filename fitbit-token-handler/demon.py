@@ -17,4 +17,4 @@ while(True):
     # To do : Update all users sleep data and heart rate data.
     
     print("Sleepings...")
-    time.sleep(60)
+    time.sleep(3600)

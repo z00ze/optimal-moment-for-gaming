@@ -27,8 +27,8 @@ client_secret = credentials[1]
 # Retvieve sleep data                                            #
 ##################################################################
 def import_sleep(sleepless, date=None):
-    # SLEEP
-    data = dbhandler.getAccesstoken(sleepless)
+    
+    data = dbhandler.getAccesstoken({'user_id' : sleepless})
     
     startdate = ""
     enddate = ""

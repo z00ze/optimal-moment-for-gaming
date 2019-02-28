@@ -4,7 +4,6 @@ import functions
 def sleepless():
     
     sleepless = dbhandler.getSleepless()
-    
     if(sleepless.get('success', False)):
         for user_id in sleepless.get('ids', []):
             functions.import_sleep(user_id)
