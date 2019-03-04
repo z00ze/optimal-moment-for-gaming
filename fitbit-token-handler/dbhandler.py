@@ -25,17 +25,19 @@ query_getAccesstoken = ("SELECT user_id, access_token FROM tokens WHERE user_id 
 query_getExpired = ("SELECT user_id, refresh_token FROM tokens WHERE updated <= now() - INTERVAL 6 HOUR")
 
 # Sleep
-query_getSleeplessIds = ("SELECT user_id FROM tokens WHERE user_id NOT IN (SELECT user_id FROM sleepdata)")
 query_addSleepdata = ("INSERT IGNORE INTO sleepdata (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
 query_getSleep = ("SELECT data FROM sleepdata WHERE user_id = %s and datetime = %s")
 
 # HR
 query_getHr = ("SELECT data FROM heartratedata WHERE user_id = %s and datetime = %s")
 query_addHRdata = ("INSERT IGNORE INTO heartratedata (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
-query_getHeartlessIds = ("SELECT user_id FROM tokens WHERE user_id NOT IN (SELECT user_id FROM heartratedata)")
+
+# HR
+query_getHr_detailed = ("SELECT data FROM heartrate_detailed WHERE user_id = %s and datetime = %s")
+query_addHR_detaileddata = ("INSERT IGNORE INTO heartrate_detailed (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
 
 
-##################################################################    
+##################################################################
 # TOKENS                                                        #
 ##################################################################
 
@@ -102,12 +104,11 @@ def getExpired():
     except Exception as e:
         print()
         return err.fail()
-    
-    
-##################################################################    
+
+
+##################################################################
 # SLEEP DATA                                                     #
 ##################################################################
-
 # Adds sleep data to DB
 def addSleepdata(data):
     
@@ -118,27 +119,6 @@ def addSleepdata(data):
         cursor.execute(query_addSleepdata, maindata)
         cnx.commit()
         return {"success": True}
-    
-    except Exception as e:
-        return err.fail(str(e.code))
-
-# Returns those who have given access to their data but do not have sleep data yet in the DB
-def getSleepless():
-    
-    global query_getSleeplessIds
-    
-    try:
-        cursor.execute(query_getSleeplessIds)
-        cnx.commit()
-        data = {"ids": [], "success": True}
-        
-        if(cursor.rowcount == 0):
-            return err.fail()
-        
-        for user_id, in cursor:
-            data['ids'].append(user_id)
-            
-        return data
     
     except Exception as e:
         return err.fail(str(e.code))
@@ -159,7 +139,6 @@ def getSleep(data):
             access = getAccesstoken(data)
             data.update({'access_token': access.get('access_token','')})
             if(access.get('success', False)):
-
                 if(functions.import_sleep(data, data['datetime']).get('success', False)):
                     
                     # Makes new request to db if the record would be now there.
@@ -182,11 +161,11 @@ def getSleep(data):
     except Exception as e:
         return err.fail(str(e))
     
-##################################################################    
+##################################################################
 # HEARTRATE DATA                                                 #
 ##################################################################
 
-# Returns sleep data by datetime.
+# Returns heartrate data by datetime.
 def getHr(data):
     global query_getHr
     
@@ -231,29 +210,61 @@ def addHRdata(data):
         maindata = (data['uniqueid'], data['user_id'], data['datetime'], data['data'])
         cursor.execute(query_addHRdata, maindata)
         cnx.commit()
-        print(data)
         return {"success": True}
     
     except Exception as e:
         return err.fail(str(e.code))
 
-# Returns those who have given access to their data but do not have sleep data yet in the DB
-def getHeartless():
-    
-    global query_getHeartlessIds
+##################################################################
+# HEARTRATE DETAILED DATA                                        #
+##################################################################
+
+# Returns heartrate data by datetime.
+def getHrDetailed(data):
+    global query_getHr_detailed
     
     try:
-        cursor.execute(query_getHeartlessIds)
+        maindata = (data['user_id'], data['datetime'])
+        cursor.execute(query_getHr_detailed, maindata)
         cnx.commit()
-        data = {"ids": [], "success": True}
         
+        # Fetch the hr data if not found in db
         if(cursor.rowcount == 0):
-            return err.fail()
-        
-        for user_id, in cursor:
-            data['ids'].append(user_id)
             
-        return data
+            access = getAccesstoken(data)
+            data.update({'access_token': access.get('access_token','')})
+            if(access.get('success', False)):
+                if(functions.import_detailed_hr(data, data['datetime']).get('success', False)):
+                    
+                    # Makes new request to db if the record would be now there.
+                    try:
+                        maindata = (data['user_id'], data['datetime'])
+    
+                        cursor.execute(query_getHr, maindata)
+                        cnx.commit()
+            
+                    except Exception as e:
+                        return err.fail(str(e))
+            
+        for val, in cursor:
+            return {"success": True, "data" : json.loads(val)}
+        
+        return err.fail()
+    
+    except Exception as e:
+        return err.fail(str(e))
+    
+
+# Adds detailed hr data to DB
+def addHrDetailed(data):
+    
+    global query_addHR_detaileddata
+    
+    try:
+        maindata = (data['uniqueid'], data['user_id'], data['datetime'], data['data'])
+        cursor.execute(query_addHR_detaileddata, maindata)
+        cnx.commit()
+        return {"success": True}
     
     except Exception as e:
         return err.fail(str(e.code))
