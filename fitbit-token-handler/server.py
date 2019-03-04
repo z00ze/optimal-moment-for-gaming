@@ -89,7 +89,7 @@ class omfg(object):
                 return err.fail(str(e.code))
     
     
-    ##################################################################    
+    ##################################################################
     # End points for requests                                        #
     ##################################################################
     
@@ -97,7 +97,7 @@ class omfg(object):
     @cherrypy.tools.json_out()
     def POST(self, var = None):
           
-    # End point to get sleep data for one day.                       
+    # End point to get sleep data for one day.
     # To do : Request data for day range.
         if(var == 'sleep'):
             
@@ -107,7 +107,7 @@ class omfg(object):
 
             return dbhandler.getSleep(data)
                
-    # End point to get heartrate data for one day.                   
+    # End point to get heartrate data for one day.
     # To do : Request data for day range.
         if(var == 'heartrate'):
             
@@ -125,6 +125,7 @@ class omfg(object):
                 err.fail()
             
             return dbhandler.getAccesstoken(data)
+
             
             
 if __name__ == '__main__':
