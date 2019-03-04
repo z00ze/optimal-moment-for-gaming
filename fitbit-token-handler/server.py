@@ -38,6 +38,8 @@ class omfg(object):
     def GET(self):
         return open('index.html')
 
+    
+    
     @cherrypy.expose
     def GET(self, var = None, code = ''):
         global client_id
@@ -79,8 +81,6 @@ class omfg(object):
                 
                 response['datetime'] = datetime.now()
                 dbresponse = dbhandler.addTokens(response)
-                if(dbresponse.get('success', False)):
-                    demonhandler.sleepless()
                 return dbresponse
                
             except urllib.error.HTTPError as e:
@@ -90,37 +90,41 @@ class omfg(object):
     
     
     ##################################################################    
-    # End point to get sleep data for one day.                       #
+    # End points for requests                                        #
     ##################################################################
-    
-    # To do : Request data for day range.
     
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def POST(self, var = None):
+          
+    # End point to get sleep data for one day.                       
+    # To do : Request data for day range.
         if(var == 'sleep'):
             
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
-            print(data)
             if('user_id' not in data and 'datetime' not in data):
                 err.fail()
 
             return dbhandler.getSleep(data)
-            
-    ##################################################################    
-    # End point to get heartrate data for one day.                   #
-    ##################################################################
-    
+               
+    # End point to get heartrate data for one day.                   
     # To do : Request data for day range.
-    
         if(var == 'heartrate'):
-            return ":D"
+            
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
             
             if('user_id' not in data and 'datetime' not in data):
                 err.fail()
             
             return dbhandler.getHr(data)
+        
+        if(var == 'access_token'):
+            data = json.loads(cherrypy.request.body.read().decode('utf-8'))
+            print(data)
+            if('user_id' not in data):
+                err.fail()
+            
+            return dbhandler.getAccesstoken(data)
             
             
 if __name__ == '__main__':

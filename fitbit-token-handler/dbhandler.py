@@ -30,8 +30,9 @@ query_addSleepdata = ("INSERT IGNORE INTO sleepdata (uniqueid, user_id, datetime
 query_getSleep = ("SELECT data FROM sleepdata WHERE user_id = %s and datetime = %s")
 
 # HR
-query_getSleep = ("SELECT data FROM sleepdata WHERE user_id = %s and datetime = %s")
-
+query_getHr = ("SELECT data FROM heartratedata WHERE user_id = %s and datetime = %s")
+query_addHRdata = ("INSERT IGNORE INTO heartratedata (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
+query_getHeartlessIds = ("SELECT user_id FROM tokens WHERE user_id NOT IN (SELECT user_id FROM heartratedata)")
 
 
 ##################################################################    
@@ -65,7 +66,7 @@ def updateTokens(data):
 def getAccesstoken(data):
     
     global query_getAccesstoken
-    
+
     try:
         cursor.execute(query_getAccesstoken, (data.get('user_id',''),))
         cnx.commit()
@@ -119,7 +120,6 @@ def addSleepdata(data):
         return {"success": True}
     
     except Exception as e:
-        print(str(e) + " query_addSleepdata error")
         return err.fail(str(e.code))
 
 # Returns those who have given access to their data but do not have sleep data yet in the DB
@@ -141,12 +141,11 @@ def getSleepless():
         return data
     
     except Exception as e:
-        print(str(e) + " query_getSleeplessIds error")
         return err.fail(str(e.code))
 
 # Returns sleep data by datetime.
 def getSleep(data):
-    
+
     global query_getSleep
     
     try:
@@ -181,7 +180,6 @@ def getSleep(data):
         return err.fail()
     
     except Exception as e:
-        print(str(e) + " query_getSleep error")
         return err.fail(str(e))
     
 ##################################################################    
@@ -190,41 +188,72 @@ def getSleep(data):
 
 # Returns sleep data by datetime.
 def getHr(data):
-    
     global query_getHr
     
     try:
         maindata = (data['user_id'], data['datetime'])
-        cursor.execute(query_getSleep, maindata)
+        cursor.execute(query_getHr, maindata)
         cnx.commit()
         
-        # Fetch the sleep data if not found in db
+        # Fetch the hr data if not found in db
         if(cursor.rowcount == 0):
             
             access = getAccesstoken(data)
             data.update({'access_token': access.get('access_token','')})
             if(access.get('success', False)):
-
-                if(functions.import_sleep(data, data['datetime']).get('success', False)):
+                if(functions.import_hr(data, data['datetime']).get('success', False)):
                     
                     # Makes new request to db if the record would be now there.
                     try:
                         maindata = (data['user_id'], data['datetime'])
     
-                        cursor.execute(query_getSleep, maindata)
+                        cursor.execute(query_getHr, maindata)
                         cnx.commit()
             
                     except Exception as e:
-                        print(str(e) + " query_getSleep error")
                         return err.fail(str(e))
             
         for val, in cursor:
             return {"success": True, "data" : json.loads(val)}
         
-        
         return err.fail()
     
     except Exception as e:
-        print(str(e) + " query_getSleep error")
         return err.fail(str(e))
     
+
+# Adds hr data to DB
+def addHRdata(data):
+    
+    global query_addHRdata
+    
+    try:
+        maindata = (data['uniqueid'], data['user_id'], data['datetime'], data['data'])
+        cursor.execute(query_addHRdata, maindata)
+        cnx.commit()
+        print(data)
+        return {"success": True}
+    
+    except Exception as e:
+        return err.fail(str(e.code))
+
+# Returns those who have given access to their data but do not have sleep data yet in the DB
+def getHeartless():
+    
+    global query_getHeartlessIds
+    
+    try:
+        cursor.execute(query_getHeartlessIds)
+        cnx.commit()
+        data = {"ids": [], "success": True}
+        
+        if(cursor.rowcount == 0):
+            return err.fail()
+        
+        for user_id, in cursor:
+            data['ids'].append(user_id)
+            
+        return data
+    
+    except Exception as e:
+        return err.fail(str(e.code))
