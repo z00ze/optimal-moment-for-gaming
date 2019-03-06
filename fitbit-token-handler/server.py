@@ -97,8 +97,8 @@ class omfg(object):
     @cherrypy.tools.json_out()
     def POST(self, var = None):
           
-    # End point to get sleep data for one day.
-    # To do : Request data for day range.
+        # End point to get sleep data for one day.
+        # To do : Request data for day range.
         if(var == 'sleep'):
             
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
@@ -107,8 +107,8 @@ class omfg(object):
 
             return dbhandler.getSleep(data)
                
-    # End point to get heartrate data for one day.
-    # To do : Request data for day range.
+        # End point to get heartrate data for one day.
+        # To do : Request data for day range.
         if(var == 'heartrate'):
             
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
@@ -118,6 +118,33 @@ class omfg(object):
             if(data.get('detailed', False)):
                 return dbhandler.getHrDetailed(data)
             return dbhandler.getHr(data)
+        
+        # End point to input eyetracker data to database.
+        if(var == 'eyetrack'):
+            try:
+                data = json.loads(cherrypy.request.body.read().decode('utf-8'))
+                print(data)
+                # check if data is valid...
+                
+                return dbhandler.addTrackerdata(data)
+            
+            except Exception as e:
+                return err.fail(str(e))
+            
+        if(var == 'get-eyetrack'):
+            try:
+                data = json.loads(cherrypy.request.body.read().decode('utf-8'))
+                
+                if('user_id' not in data and 'datetime' not in data):
+                    err.fail()
+                    
+                return dbhandler.getTrackerdata(data)
+            
+            except Exception as e:
+                print(e)
+                return err.fail(str(e))
+
+            
         
     # End point to get access token for DEVELOPMENT PUPROSE ONLY!
     # SOS STOP SEIS SECURITY RISK - WILL BE REMOVED WHEN NOT NEEDED!

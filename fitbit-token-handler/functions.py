@@ -83,7 +83,7 @@ def import_hr(data, date=None):
         for hr in hrs.get('activities-heart', []):
             day = {}
             day['user_id'] = data.get('user_id','')
-            day['uniqueid'] = str(hashlib.sha256(bytes(day('user_id','') + json.dumps(hr),'utf-8')).hexdigest())
+            day['uniqueid'] = str(hashlib.sha256(bytes(day.get('user_id','') + json.dumps(hr),'utf-8')).hexdigest())
 
             day['data'] = json.dumps(hr)
             day['datetime'] = hr.get('dateTime','')
@@ -123,6 +123,7 @@ def import_detailed_hr(data, date):
             day['datetime'] = hr.get('dateTime','')
             
             theday = dbhandler.addHrDetailed(day)
+            
             if(not theday.get('success', False)):
                 return theday
         return {"success": True}

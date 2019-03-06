@@ -6,6 +6,9 @@ import json
 from datetime import datetime
 import errorhandler as err
 import functions
+import hashlib
+import time
+import dateutil.parser
 
 # CREDENTIALS
 credentials = open('credentials-db.data', 'r').read().split('\n')
@@ -32,10 +35,14 @@ query_getSleep = ("SELECT data FROM sleepdata WHERE user_id = %s and datetime = 
 query_getHr = ("SELECT data FROM heartratedata WHERE user_id = %s and datetime = %s")
 query_addHRdata = ("INSERT IGNORE INTO heartratedata (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
 
-# HR
+# HR detailed
 query_getHr_detailed = ("SELECT data FROM heartrate_detailed WHERE user_id = %s and datetime = %s")
 query_addHR_detaileddata = ("INSERT IGNORE INTO heartrate_detailed (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
 
+# EyeTracker
+query_setTrackerdata = ("INSERT IGNORE INTO eyetracker (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
+query_getTrackerdata = ("SELECT data FROM eyetracker WHERE uniqueid = %s")
+query_addTrackerdata = ("UPDATE eyetracker SET data = JSON_ARRAY_APPEND(data, '$', CAST(%s AS JSON)) WHERE uniqueid = %s")
 
 ##################################################################
 # TOKENS                                                        #
@@ -171,6 +178,7 @@ def getHr(data):
     
     try:
         maindata = (data['user_id'], data['datetime'])
+
         cursor.execute(query_getHr, maindata)
         cnx.commit()
         
@@ -185,7 +193,7 @@ def getHr(data):
                     # Makes new request to db if the record would be now there.
                     try:
                         maindata = (data['user_id'], data['datetime'])
-    
+                        
                         cursor.execute(query_getHr, maindata)
                         cnx.commit()
             
@@ -239,9 +247,11 @@ def getHrDetailed(data):
                     # Makes new request to db if the record would be now there.
                     try:
                         maindata = (data['user_id'], data['datetime'])
-    
-                        cursor.execute(query_getHr, maindata)
+                        print(maindata)
+                        cursor.execute(query_getHr_detailed, maindata)
                         cnx.commit()
+                        if(cursor.rowcount == 0):
+                            print("rawrarwar")
             
                     except Exception as e:
                         return err.fail(str(e))
@@ -267,4 +277,58 @@ def addHrDetailed(data):
         return {"success": True}
     
     except Exception as e:
-        return err.fail(str(e.code))
+        return err.fail(str(e))
+
+# Adds detailed hr data to DB
+def addTrackerdata(data):
+    
+    global query_setTrackerdata
+    global query_addTrackerdata
+    
+    try:
+        
+        dt = dateutil.parser.parse(data['datetime'])
+        data['datetime'] = str(datetime(dt.year, dt.month, dt.day))
+        data['unique_id'] = str(hashlib.sha256(bytes(data.get('user_id','') + json.dumps(data.get('datetime','')), 'utf-8')).hexdigest())
+        print(data['unique_id'])
+        maindata = (data['unique_id'], data['user_id'], data['datetime'], '[]')
+        
+        # set the data if not set
+        cursor.execute(query_setTrackerdata, maindata)
+        cnx.commit()
+        
+        maindata = (str(json.dumps(data['data'])), data['unique_id'])
+        
+        cursor.execute(query_addTrackerdata, maindata)
+        cnx.commit()
+        
+        return {"success": True}
+    
+    except Exception as e:
+        return err.fail(str(e))
+
+def getTrackerdata(data):
+    
+    global query_getTrackerdata
+    
+    
+    try:
+        dt = dateutil.parser.parse(data['datetime'])
+        data['datetime'] = str(datetime(dt.year, dt.month, dt.day))
+        data['unique_id'] = str(hashlib.sha256(bytes(data.get('user_id','') + json.dumps(data.get('datetime','')), 'utf-8')).hexdigest())
+        maindata = (data['unique_id'], )
+        print(data['unique_id'])
+        cursor.execute(query_getTrackerdata, maindata)
+        cnx.commit()
+        
+        if(cursor.rowcount == 0):
+            print("yeah nolla..")
+        
+        for val, in cursor:
+            return {"success": True, "data" : json.loads(val)}
+        
+        return err.fail()
+        
+        
+    except Exception as e:
+        return err.fail(str(e))
