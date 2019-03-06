@@ -287,16 +287,18 @@ def addTrackerdata(data):
     
     try:
         
+        data['data']['datetime'] = data['datetime']
         dt = dateutil.parser.parse(data['datetime'])
         data['datetime'] = str(datetime(dt.year, dt.month, dt.day))
         data['unique_id'] = str(hashlib.sha256(bytes(data.get('user_id','') + json.dumps(data.get('datetime','')), 'utf-8')).hexdigest())
-        print(data['unique_id'])
+        
         maindata = (data['unique_id'], data['user_id'], data['datetime'], '[]')
         
         # set the data if not set
         cursor.execute(query_setTrackerdata, maindata)
         cnx.commit()
         
+        # append data
         maindata = (str(json.dumps(data['data'])), data['unique_id'])
         
         cursor.execute(query_addTrackerdata, maindata)
@@ -317,12 +319,9 @@ def getTrackerdata(data):
         data['datetime'] = str(datetime(dt.year, dt.month, dt.day))
         data['unique_id'] = str(hashlib.sha256(bytes(data.get('user_id','') + json.dumps(data.get('datetime','')), 'utf-8')).hexdigest())
         maindata = (data['unique_id'], )
-        print(data['unique_id'])
+
         cursor.execute(query_getTrackerdata, maindata)
         cnx.commit()
-        
-        if(cursor.rowcount == 0):
-            print("yeah nolla..")
         
         for val, in cursor:
             return {"success": True, "data" : json.loads(val)}

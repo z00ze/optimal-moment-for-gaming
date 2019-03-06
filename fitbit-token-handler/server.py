@@ -41,7 +41,8 @@ class omfg(object):
     
     
     @cherrypy.expose
-    def GET(self, var = None, code = ''):
+    @cherrypy.tools.json_out()
+    def GET(self, var = None, code = '', user_id = None, date_time = None):
         global client_id
         global client_secret
         
@@ -87,6 +88,19 @@ class omfg(object):
                 return err.fail(str(e.code))
             except urllib.error.URLError as e:
                 return err.fail(str(e.code))
+            
+        
+        if(var == 'eyetrack' and user_id is not None and date_time is not None):
+            try:
+                params = cherrypy.request.params
+                data = { "user_id": params.get("user_id"), "datetime": params.get("date_time")}
+                returni = dbhandler.getTrackerdata(data)
+                print(type(returni))
+                return returni
+            
+            except Exception as e:
+                print(e)
+                return err.fail(str(e))
     
     
     ##################################################################
@@ -130,20 +144,6 @@ class omfg(object):
             
             except Exception as e:
                 return err.fail(str(e))
-            
-        if(var == 'get-eyetrack'):
-            try:
-                data = json.loads(cherrypy.request.body.read().decode('utf-8'))
-                
-                if('user_id' not in data and 'datetime' not in data):
-                    err.fail()
-                    
-                return dbhandler.getTrackerdata(data)
-            
-            except Exception as e:
-                print(e)
-                return err.fail(str(e))
-
             
         
     # End point to get access token for DEVELOPMENT PUPROSE ONLY!
