@@ -16,8 +16,10 @@ user = credentials[0]
 password = credentials[1]
 
 # MYSQL CONNECTION
-cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
-cursor = cnx.cursor(buffered=True)
+#cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+#cursor = cnx.cursor(buffered=True)
+
+
 
 # BASIC QUERIES
 
@@ -44,12 +46,15 @@ query_setTrackerdata = ("INSERT IGNORE INTO eyetracker (uniqueid, user_id, datet
 query_getTrackerdata = ("SELECT data FROM eyetracker WHERE uniqueid = %s")
 query_addTrackerdata = ("UPDATE eyetracker SET data = JSON_ARRAY_APPEND(data, '$', CAST(%s AS JSON)) WHERE uniqueid = %s")
 
+# Gatherer
+query_getAll = ("")
+
 ##################################################################
 # TOKENS                                                        #
 ##################################################################
 
 # add tokens to database
-def addTokens(data):
+def addTokens(data, cnx, cursor):
     
     global query_addTokens
     
@@ -63,7 +68,7 @@ def addTokens(data):
         return err.fail(str(e))
     
 # updates tokens in database
-def updateTokens(data):
+def updateTokens(data, cnx, cursor):
     
     global query_updateTokens
     
@@ -72,7 +77,7 @@ def updateTokens(data):
     cnx.commit()
         
 # returns accesstoken by user_id
-def getAccesstoken(data):
+def getAccesstoken(data, cnx, cursor):
     
     global query_getAccesstoken
 
@@ -81,10 +86,10 @@ def getAccesstoken(data):
         cnx.commit()
         if(cursor.rowcount == 0):
             return err.fail('no user')
-
+        
         for (user_id, access_token) in cursor:
             asd = {
-                    'success': True, 
+                    'success': True,
                     'user_id': user_id,
                     'access_token': access_token
                     }
@@ -94,7 +99,7 @@ def getAccesstoken(data):
         return err.fail(str(e))
 
 # returns those users who are about to have access token expired
-def getExpired():
+def getExpired(cnx, cursor):
     
     global query_getExpired
     
@@ -106,6 +111,7 @@ def getExpired():
         expired_users = {"users": [], "success": True}
         for (user_id, refresh_token) in cursor:
             expired_users['users'].append({"user_id": user_id, "refresh_token": refresh_token})
+        
         return expired_users
     
     except Exception as e:
@@ -117,7 +123,7 @@ def getExpired():
 # SLEEP DATA                                                     #
 ##################################################################
 # Adds sleep data to DB
-def addSleepdata(data):
+def addSleepdata(data, cnx, cursor):
     
     global query_addSleepdata
     
@@ -131,7 +137,7 @@ def addSleepdata(data):
         return err.fail(str(e.code))
 
 # Returns sleep data by datetime.
-def getSleep(data):
+def getSleep(data, cnx, cursor):
 
     global query_getSleep
     
@@ -143,10 +149,10 @@ def getSleep(data):
         # Fetch the sleep data if not found in db
         if(cursor.rowcount == 0):
             
-            access = getAccesstoken(data)
+            access = getAccesstoken(data, cnx, cursor)
             data.update({'access_token': access.get('access_token','')})
             if(access.get('success', False)):
-                if(functions.import_sleep(data, data['datetime']).get('success', False)):
+                if(functions.import_sleep(data, cnx, cursor, data['datetime']).get('success', False)):
                     
                     # Makes new request to db if the record would be now there.
                     try:
@@ -173,7 +179,7 @@ def getSleep(data):
 ##################################################################
 
 # Returns heartrate data by datetime.
-def getHr(data):
+def getHr(data, cnx, cursor):
     global query_getHr
     
     try:
@@ -185,10 +191,10 @@ def getHr(data):
         # Fetch the hr data if not found in db
         if(cursor.rowcount == 0):
             
-            access = getAccesstoken(data)
+            access = getAccesstoken(data, cnx, cursor)
             data.update({'access_token': access.get('access_token','')})
             if(access.get('success', False)):
-                if(functions.import_hr(data, data['datetime']).get('success', False)):
+                if(functions.import_hr(data, data['datetime'], cnx, cursor).get('success', False)):
                     
                     # Makes new request to db if the record would be now there.
                     try:
@@ -210,7 +216,7 @@ def getHr(data):
     
 
 # Adds hr data to DB
-def addHRdata(data):
+def addHRdata(data, cnx, cursor):
     
     global query_addHRdata
     
@@ -228,7 +234,7 @@ def addHRdata(data):
 ##################################################################
 
 # Returns heartrate data by datetime.
-def getHrDetailed(data):
+def getHrDetailed(data, cnx, cursor):
     global query_getHr_detailed
     
     try:
@@ -239,10 +245,10 @@ def getHrDetailed(data):
         # Fetch the hr data if not found in db
         if(cursor.rowcount == 0):
             
-            access = getAccesstoken(data)
+            access = getAccesstoken(data, cnx, cursor)
             data.update({'access_token': access.get('access_token','')})
             if(access.get('success', False)):
-                if(functions.import_detailed_hr(data, data['datetime']).get('success', False)):
+                if(functions.import_detailed_hr(data, data['datetime'], cnx, cursor).get('success', False)):
                     
                     # Makes new request to db if the record would be now there.
                     try:
@@ -266,7 +272,7 @@ def getHrDetailed(data):
     
 
 # Adds detailed hr data to DB
-def addHrDetailed(data):
+def addHrDetailed(data, cnx, cursor):
     
     global query_addHR_detaileddata
     
@@ -280,7 +286,7 @@ def addHrDetailed(data):
         return err.fail(str(e))
 
 # Adds detailed hr data to DB
-def addTrackerdata(data):
+def addTrackerdata(data, cnx, cursor):
     
     global query_setTrackerdata
     global query_addTrackerdata
@@ -309,7 +315,7 @@ def addTrackerdata(data):
     except Exception as e:
         return err.fail(str(e))
 
-def getTrackerdata(data):
+def getTrackerdata(data, cnx, cursor):
     
     global query_getTrackerdata
     
@@ -326,8 +332,9 @@ def getTrackerdata(data):
         for val, in cursor:
             return {"success": True, "data" : json.loads(val)}
         
-        return err.fail()
+        return err.fail("no data for given day")
         
         
     except Exception as e:
         return err.fail(str(e))
+

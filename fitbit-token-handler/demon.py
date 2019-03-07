@@ -13,7 +13,7 @@ while(True):
     
     # Refreshes access tokens which are about to get old.
     demonhandler.refreshTokens()
-    
+
     # To do : Update all users sleep data and heart rate data.
     
     print("Sleepings...")

@@ -18,16 +18,23 @@ import requests
 from cherrypy.lib.static import serve_file
 
 # DATABASE
+import mysql.connector
 import dbhandler
 # DEMONHANDLER
 import demonhandler
 # ERROR HANDLER
 import errorhandler as err
+# FUNCTIONS
+import functions
 
 # CREDENTIALS
 credentials = open('credentials-fitbitapp.data', 'r').read().split('\n')
 client_id = credentials[0]
 client_secret = credentials[1]
+
+credentials_db = open('credentials-db.data', 'r').read().split('\n')
+user = credentials_db[0]
+password = credentials_db[1]
 
 def fail():
     return { "success": False }
@@ -37,12 +44,10 @@ class omfg(object):
         
     def GET(self):
         return open('index.html')
-
-    
     
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def GET(self, var = None, code = '', user_id = None, date_time = None):
+    def GET(self, var = None, code = '', user_id = None, date_time = None, time_from = None, time_to = None):
         global client_id
         global client_secret
         
@@ -67,6 +72,10 @@ class omfg(object):
         # To do :  scope checks.
         
         if(var == 'fitbit-callback'):
+            
+            cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+            cursor = cnx.cursor(buffered=True)
+            
             request_params = {
                 'grant_type': 'authorization_code',
                 'code': code,
@@ -81,7 +90,9 @@ class omfg(object):
                 response = json.loads(urlopen(request).read().decode())
                 
                 response['datetime'] = datetime.now()
-                dbresponse = dbhandler.addTokens(response)
+                dbresponse = dbhandler.addTokens(response, cnx, cursor)
+                cursor.close()
+                cnx.close()
                 return dbresponse
                
             except urllib.error.HTTPError as e:
@@ -91,21 +102,27 @@ class omfg(object):
             
         
         if(var == 'eyetrack' and user_id is not None and date_time is not None):
+            cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+            cursor = cnx.cursor(buffered=True)
             try:
                 params = cherrypy.request.params
                 data = { "user_id": params.get("user_id"), "datetime": params.get("date_time")}
-                returni = dbhandler.getTrackerdata(data)
-                print(type(returni))
+                returni = dbhandler.getTrackerdata(data, cnx, cursor)
                 return returni
             
             except Exception as e:
-                print(e)
                 return err.fail(str(e))
-    
+        
+        if(var == 'all' and user_id is not None and time_from is not None and time_to is not None):
+            cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+            cursor = cnx.cursor(buffered=True)
+            data = {"user_id": user_id, "time_from": time_from, "time_to": time_to}
+            return functions.gatherer(data, cnx, cursor)
     
     ##################################################################
     # End points for requests                                        #
     ##################################################################
+    
     
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -114,33 +131,48 @@ class omfg(object):
         # End point to get sleep data for one day.
         # To do : Request data for day range.
         if(var == 'sleep'):
-            
+            cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+            cursor = cnx.cursor(buffered=True)
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
             if('user_id' not in data and 'datetime' not in data):
                 err.fail()
 
-            return dbhandler.getSleep(data)
+            return dbhandler.getSleep(data, cnx, cursor)
                
         # End point to get heartrate data for one day.
         # To do : Request data for day range.
         if(var == 'heartrate'):
-            
+            cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+            cursor = cnx.cursor(buffered=True)
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
             
             if('user_id' not in data and 'datetime' not in data):
+                cursor.close()
+                cnx.close()
                 err.fail()
             if(data.get('detailed', False)):
-                return dbhandler.getHrDetailed(data)
-            return dbhandler.getHr(data)
+                returni = dbhandler.getHrDetailed(data, cnx, cursor)
+                cursor.close()
+                cnx.close()
+                return returni
+            returni = dbhandler.getHr(data, cnx, cursor)
+            cursor.close()
+            cnx.close()
+            return returni
         
         # End point to input eyetracker data to database.
         if(var == 'eyetrack'):
             try:
+                cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+                cursor = cnx.cursor(buffered=True)
                 data = json.loads(cherrypy.request.body.read().decode('utf-8'))
                 print(data)
-                # check if data is valid...
                 
-                return dbhandler.addTrackerdata(data)
+                # to do : check if data is valid...
+                returni = dbhandler.addTrackerdata(data, cnx, cursor)
+                cursor.close()
+                cnx.close()
+                return returni
             
             except Exception as e:
                 return err.fail(str(e))
@@ -149,15 +181,21 @@ class omfg(object):
     # End point to get access token for DEVELOPMENT PUPROSE ONLY!
     # SOS STOP SEIS SECURITY RISK - WILL BE REMOVED WHEN NOT NEEDED!
         if(var == 'access_token'):
+            cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+            cursor = cnx.cursor(buffered=True)
             data = json.loads(cherrypy.request.body.read().decode('utf-8'))
-            print(data)
+
             if('user_id' not in data):
                 err.fail()
+            returni = dbhandler.getAccesstoken(data, cnx, cursor)
+            cursor.close()
+            cnx.close()
             
-            return dbhandler.getAccesstoken(data)
+            return returni
 
             
             
+
 if __name__ == '__main__':
     current_dir = os.path.dirname(os.path.abspath(__file__))
     conf = {
