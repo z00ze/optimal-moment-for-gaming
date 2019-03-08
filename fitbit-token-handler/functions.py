@@ -180,15 +180,22 @@ def gatherer(data, cnx, cursor):
     
     # get hr data
     # HR DETAILED
-    maindata = (data['user_id'], str(time_from.replace(hour=0, minute=0, second=0)), str(time_to.replace(hour=0, minute=0, second=0)))
-    query_getHr_detailed_range = ("SELECT data, datetime FROM heartrate_detailed WHERE user_id = %s AND datetime BETWEEN %s AND %s WHERE JSON_EXTRACT(data, '$.dataset.time') AS ebin")
-    #datetime LIKE '%2019-03-01 00:00:00%';
+    print(str(time_from.time()))
+    maindata = (
+                time_from.time(),
+                time_to.time(),
+                str(time_from.replace(hour=0, minute=0, second=0)),
+                str(time_to.replace(hour=0, minute=0, second=0)),
+                data['user_id']
+               )
+    query_getHr_detailed_range = ("SELECT hr.v, ADDTIME(datetime, hr.t) as t FROM heartrate_detailed, JSON_TABLE(data, '$.dataset[*]' COLUMNS (v INT(40) PATH '$.value', t VARCHAR(100) PATH '$.time')) hr WHERE hr.t > %s AND hr.t < %s AND datetime > %s AND datetime < %s AND user_id LIKE %s")
+
     cursor.execute(query_getHr_detailed_range, maindata)
     cnx.commit()
     hr_data = []
-    for val,dt,ebin in cursor:
-            hr_data.append({"datetime":str(dt), "data" : json.loads(val), "lol":ebin})
-    print(hr_data)
+    for v,t, in cursor:
+            hr_data.append({"value": v, "time": str(t)})
+    return hr_data
     #for datapoint in datapoints:
 
      #   for hr in hr_data:
