@@ -178,7 +178,6 @@ def gatherer(data, cnx, cursor):
                 "eye_tracker": {"left": -1, "right": -1}
             })
     
-    # get hr data
     # HR DETAILED
     maindata = (
                 str(time_from),
@@ -186,14 +185,47 @@ def gatherer(data, cnx, cursor):
                 data['user_id']
                )
     query_getHr_detailed_range = ("SELECT hr.v, ADDTIME(datetime, hr.t) as dt FROM heartrate_detailed, JSON_TABLE(data, '$.dataset[*]' COLUMNS (v INT(40) PATH '$.value', t VARCHAR(100) PATH '$.time')) hr WHERE ADDTIME(datetime, hr.t) >= %s AND ADDTIME(datetime, hr.t) <= %s AND user_id LIKE %s")
-    print(query_getHr_detailed_range, maindata)
     cursor.execute(query_getHr_detailed_range, maindata)
     cnx.commit()
     hr_data = []
     for v,t, in cursor:
             hr_data.append({"value": v, "time": str(t)})
-    return hr_data
+
+
+    
+    # SLEEP
+    time_from_without_time = time_from.replace(hour=0, minute=0, second=0)
+    time_to_without_time = time_to.replace(hour=0, minute=0, second=0)
+    query_getSleepdata = ("SELECT data FROM sleepdata WHERE datetime BETWEEN %s AND %s AND user_id LIKE %s")
+    maindata = (
+                str(time_from_without_time),
+                str(time_to_without_time),
+                data['user_id']
+               )
+    cursor.execute(query_getSleepdata, maindata)
+    cnx.commit()
+    sleep_data = []
+    for val, in cursor:
+        data = json.loads(val)
+        for dt in data['levels']['data']:
+            sleep_data.append(dt)
+
+    # GOTTA CATCH 'EM ALL!
+
+    for datapoint in datapoints:
+        dt = dateutil.parser.parse(datapoint['datetime'])
+        for hr in hr_data:
+            
+            if(datapoint['datetime'] == hr['time']):
+                datapoint['heart_rate']['value'] = hr['value']
         
+        for sleep in sleep_data:
+            dt_slp = dateutil.parser.parse(sleep['dateTime'])
+            if(dt_slp == dt):
+                print("rawr")
+            if(dt_slp +  timedelta(0, sleep['seconds']) >= dt and dt_slp +  timedelta(0, sleep['seconds']) <= dt):
+                datapoint['sleep']['level'] = sleep['level']
+            
     return {"success": True}
 
 #{
