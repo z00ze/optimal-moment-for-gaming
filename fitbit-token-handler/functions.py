@@ -180,36 +180,19 @@ def gatherer(data, cnx, cursor):
     
     # get hr data
     # HR DETAILED
-    print(str(time_from.time()))
     maindata = (
-                time_from.time(),
-                time_to.time(),
-                str(time_from.replace(hour=0, minute=0, second=0)),
-                str(time_to.replace(hour=0, minute=0, second=0)),
+                str(time_from),
+                str(time_to),
                 data['user_id']
                )
-    query_getHr_detailed_range = ("SELECT hr.v, ADDTIME(datetime, hr.t) as t FROM heartrate_detailed, JSON_TABLE(data, '$.dataset[*]' COLUMNS (v INT(40) PATH '$.value', t VARCHAR(100) PATH '$.time')) hr WHERE hr.t > %s AND hr.t < %s AND datetime > %s AND datetime < %s AND user_id LIKE %s")
-
+    query_getHr_detailed_range = ("SELECT hr.v, ADDTIME(datetime, hr.t) as dt FROM heartrate_detailed, JSON_TABLE(data, '$.dataset[*]' COLUMNS (v INT(40) PATH '$.value', t VARCHAR(100) PATH '$.time')) hr WHERE ADDTIME(datetime, hr.t) >= %s AND ADDTIME(datetime, hr.t) <= %s AND user_id LIKE %s")
+    print(query_getHr_detailed_range, maindata)
     cursor.execute(query_getHr_detailed_range, maindata)
     cnx.commit()
     hr_data = []
     for v,t, in cursor:
             hr_data.append({"value": v, "time": str(t)})
     return hr_data
-    #for datapoint in datapoints:
-
-     #   for hr in hr_data:
-            
-        #    for dat in hr['data']['dataset']:
-        #        
-        #       dat_time = [int(x) for x in dat['time'].split(':')]
-        #       dat_time = dateutil.parser.parse(hr['datetime']) + timedelta(hours=dat_time[0], minutes=dat_time[1], seconds=dat_time[2])
-        #       if(datapoint['datetime'] == dat_time):
-                    
-                #print(dateutil.parser.parse(hr['datetime']) + dateutil.parser.parse(dat['time']))
-                
-        #   break
-        
         
     return {"success": True}
 
