@@ -219,13 +219,13 @@ def gatherer(data, cnx, cursor):
             if(datapoint['datetime'] == hr['time']):
                 datapoint['heart_rate']['value'] = hr['value']
         
-        for sleep in sleep_data:
-            dt_slp = dateutil.parser.parse(sleep['dateTime'])
-            if(dt_slp == dt):
-                print("rawr")
-            if(dt_slp +  timedelta(0, sleep['seconds']) >= dt and dt_slp +  timedelta(0, sleep['seconds']) <= dt):
-                datapoint['sleep']['level'] = sleep['level']
-            
+        #for sleep in sleep_data:
+        #    dt_slp = dateutil.parser.parse(sleep['dateTime'])
+        #    if(dt_slp == dt):
+        #        print("rawr")
+        #    if(dt_slp +  timedelta(0, sleep['seconds']) >= dt and dt_slp +  timedelta(0, sleep['seconds']) <= dt):
+        #        datapoint['sleep']['level'] = sleep['level']
+    return datapoints
     return {"success": True}
 
 #{
