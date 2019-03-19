@@ -35,10 +35,6 @@ query_getSleep = ("SELECT data FROM sleepdata WHERE user_id = %s and datetime = 
 query_getSleepCountDup = ("SELECT count(*) FROM sleepdata WHERE user_id = %s and datetime = %s and uniqueid != %s")
 query_deleteSleep = ("DELETE FROM sleepdata WHERE user_id = %s and datetime = %s")
 
-# HR
-query_addHRdata = ("INSERT IGNORE INTO heartratedata (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
-query_getHr = ("SELECT data FROM heartratedata WHERE user_id = %s and datetime = %s")
-
 # HR detailed
 query_addHR_detaileddata = ("INSERT IGNORE INTO heartrate_detailed (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
 query_getHr_detailed = ("SELECT data FROM heartrate_detailed WHERE user_id = %s and datetime = %s")
@@ -47,8 +43,10 @@ query_deleteHr_detailed = ("DELETE FROM heartrate_detailed WHERE user_id = %s an
 
 # EyeTracker
 query_setTrackerdata = ("INSERT IGNORE INTO eyetracker (uniqueid, user_id, datetime, data) VALUES (%s, %s, %s, %s)")
-query_getTrackerdata = ("SELECT data FROM eyetracker WHERE uniqueid = %s")
 query_addTrackerdata = ("UPDATE eyetracker SET data = JSON_ARRAY_APPEND(data, '$', CAST(%s AS JSON)) WHERE uniqueid = %s")
+
+# Benchmark
+query_addBenchmark = ("INSERT IGNORE INTO benchmark (uniqueid, datetime, user_id, result) VALUES (%s, %s, %s, %s)")
 
 # Get users
 query_getUsers = ("SELECT user_id, access_token FROM tokens")
@@ -277,7 +275,11 @@ def addHrDetailed(data, cnx, cursor):
         return err.fail(str(e))
 
 
-# Adds detailed hr data to DB
+##################################################################
+# TRACKER DATA                                                   #
+##################################################################
+
+# Add detailed tracker data to DB
 def addTrackerdata(data, cnx, cursor):
     
     global query_setTrackerdata
@@ -304,5 +306,27 @@ def addTrackerdata(data, cnx, cursor):
         
         return {"success": True}
     
+    except Exception as e:
+        return err.fail(str(e))
+
+##################################################################
+# BENCHMARK DATA                                                 #
+##################################################################
+
+# Add benchmark data to DB
+def addBenchmark(data, cnx, cursor):
+    
+    global query_addBenchmark
+    
+    try:
+        
+        data['unique_id'] = str(hashlib.sha256(bytes(data.get('user_id','') + json.dumps(data.get('datetime','')), 'utf-8')).hexdigest())
+        
+        maindata = (data['unique_id'], data['datetime'], data['user_id'], data['result'])
+        cursor.execute(query_addBenchmark, maindata)
+        cnx.commit()
+        
+        return {"success": True}
+        
     except Exception as e:
         return err.fail(str(e))

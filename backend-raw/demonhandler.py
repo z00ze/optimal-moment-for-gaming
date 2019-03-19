@@ -1,7 +1,7 @@
 import dbhandler
 import functions
 import mysql.connector
-import datetime as datetime
+from datetime import datetime, timedelta
 
 def refreshTokens():
     
@@ -22,7 +22,8 @@ def refreshTokens():
 
 def fetchData():
     
-    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     
     credentials_db = open('credentials-db.data', 'r').read().split('\n')
     user = credentials_db[0]
@@ -31,13 +32,18 @@ def fetchData():
     cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
     cursor = cnx.cursor(buffered=True)
     
-    # get all users...
+    # get all users
     data = dbhandler.getUsers(cnx, cursor)
     
     for user in data['users']:
         
+        # update users data for today
         functions.import_sleep(user, cnx, cursor, current_date)
         functions.import_detailed_hr(user, cnx, cursor, current_date)
+        
+        # update users data for yesterday
+        functions.import_sleep(user, cnx, cursor, yesterday)
+        functions.import_detailed_hr(user, cnx, cursor, yesterday)
     
 
     cursor.close()

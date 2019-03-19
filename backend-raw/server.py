@@ -130,6 +130,7 @@ class omfg(object):
             try:
                 cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
                 cursor = cnx.cursor(buffered=True)
+                
                 data = json.loads(cherrypy.request.body.read().decode('utf-8'))
                 print(data)
                 
@@ -145,11 +146,17 @@ class omfg(object):
         # end point for benchmark to send data
         if(var == 'benchmark'):
             try:
+                
+                cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+                cursor = cnx.cursor(buffered=True)
+                
                 data = json.loads(cherrypy.request.body.read().decode('utf-8'))
+                print(data)
                 
-                # TO DO: validate data and add to db.
-                
-                return {"success": False}
+                returni = dbhandler.addBenchmark(data, cnx, cursor)
+                cursor.close()
+                cnx.close()
+                return returni
                 
             except Exception as e:
                 return err.fail(str(e))

@@ -14,7 +14,7 @@ while(True):
     # Refreshes access tokens which are about to get old.
     demonhandler.refreshTokens()
 
-
+    # Fetches data for each user.
     demonhandler.fetchData()
     
     print("Sleepings...")
