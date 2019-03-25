@@ -51,6 +51,40 @@ query_addBenchmark = ("INSERT IGNORE INTO benchmark (uniqueid, datetime, user_id
 # Get users
 query_getUsers = ("SELECT user_id, access_token FROM tokens")
 
+# Return data from processed
+query_getProcessed = ("SELECT datetime, omfg, effiency, heartrate, eyetrack, user_id, predict FROM fitbittokens.processed WHERE user_id = %s AND datetime BETWEEN %s AND %s AND UNIX_TIMESTAMP(datetime) mod %s = 0 ORDER BY datetime")
+
+##################################################################
+# Processed                                                      #
+##################################################################
+
+def getProcessed(user_id, date_from, date_to, interval, cnx, cursor):
+    
+    global query_getProcessed
+    
+    maindata = (user_id, date_from, date_to, int(interval))
+    
+    try:
+        cursor.execute(query_getProcessed, maindata)
+        cnx.commit()
+        
+        if(cursor.rowcount == 0):
+            return err.fail('no data for this period')
+        
+        data = {"success": True, "time_from": str(date_from), "time_to": str(date_to), "datapoints":[]}
+        
+        for (datetime, omfg, effiency, heartrate, eyetracker, user_id, predict) in cursor:
+            data['datapoints'].append(
+            {
+                "datetime":str(datetime), "omfg":omfg, "effiency":effiency, "heartrate":heartrate, "eyetracker":json.loads(eyetracker), "user_id":user_id, "predict":predict    
+            }
+            )
+        return data
+        
+    except Exception as e:
+        return err.fail(str(e))                                                                                                                                                             
+                                                     
+
 ##################################################################
 # USERS                                                          #
 ##################################################################

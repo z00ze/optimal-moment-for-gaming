@@ -45,7 +45,7 @@ class omfg(object):
     
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def GET(self, var = None, code = '', user_id = None, date_time = None, time_from = None, time_to = None):
+    def GET(self, var = None, code = '', user_id = None, date_time = None, time_from = None, time_to = None, interval = None):
         
         global client_id
         global client_secret
@@ -112,9 +112,15 @@ class omfg(object):
             except Exception as e:
                 return err.fail(str(e))
         
-        if(var == 'all' and user_id is not None and time_from is not None and time_to is not None):
-            # TO DO: return processed data by parameters.
-            return {"success": False}
+        if(var == 'processed' and user_id is not None and time_from is not None and time_to is not None and interval is not None):
+            print(interval)
+            cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
+            cursor = cnx.cursor(buffered=True)
+            try:
+                returni = dbhandler.getProcessed(user_id, time_from, time_to, interval, cnx, cursor)
+                return returni
+            except Exception as e:
+                    return err.fail(str(e))
         
     ##################################################################
     # End points for requests                                        #
