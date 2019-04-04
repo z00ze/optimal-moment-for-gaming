@@ -1,0 +1,7 @@
+{
+    "GET_USERS":{
+        "USERS_KEY":"users",
+        "USER_ID_KEY":"user_id",
+        "ACCESS_TOKEN_KEY":"access_token"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "success": True,
+    "users": [
+        {
+            "user_id": "7B8P5X",
+            "access_token": "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyMkRKV0MiLCJzdWIiOiI3QjhQNVgiLCJpc3MiOiJGaXRiaXQiLCJ0eXAiOiJhY2Nlc3NfdG9rZW4iLCJzY29wZXMiOiJyc29jIHJzZXQgcmFjdCBybG9jIHJ3ZWkgcmhyIHJwcm8gcm51dCByc2xlIiwiZXhwIjoxNTU0MzgxMzczLCJpYXQiOjE1NTQzNTI1NzN9.78vtKTf2U3ZBIR2qhzTEnm-Sov0x1xqUf69Qxm0kFh0"
+        }
+    ]
+}
