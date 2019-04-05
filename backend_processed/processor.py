@@ -3,6 +3,8 @@
 
 import time
 import dbhandler
+
+from Classes.User import User
 from Classes.Config import Config
 from Classes.DataEntry import DataEntry
 from datetime import datetime, timedelta
@@ -16,7 +18,7 @@ def log(msg):
         print(msg)
 
 CONF = Config()
-log(f"#####\n\nCONF:")
+log("#####\n\nCONF:")
 for key, value in CONF.__dict__.items():
     try:
         log(f"{key} - {value.__dict__}")
@@ -30,14 +32,7 @@ def log_func(func):
             log(f"### {func.__name__} ###")
 
         return func(*args, **kwargs)
-    return wrapper
-
-class User:
-    def __init__(self, user_dict):
-        self.id = user_dict[CONF.GET_USERS_KEYS.USER_ID_KEY]
-        self.token = user_dict[CONF.GET_USERS_KEYS.ACCESS_TOKEN_KEY]
-
-        
+    return wrapper        
 
 @log_func
 def get_users():    
@@ -46,16 +41,19 @@ def get_users():
     return users
 
 @log_func
-def process_user_data(user):
-    time_entries = get_processed_time_entries()
+def process_user_data(user):    
     log(f"got user with id:{user.id} and token: {user.token}")
+    user.time_entries = get_yesterday_time_entries()
+
+    datetime = "2019-03-27" # TODO: change 
+    hr_data = dbhandler.get_hr_data_by_date(user.id, datetime)
+    process_hr_data(user, hr_data)
+
     datetime = "2019-03-25"
     sleep_data = dbhandler.get_sleep_data_by_date(user.id, datetime)
     # log(f"sleep_data:{sleep_data}")
 
-    datetime = "2019-03-27"
-    hr_data = dbhandler.get_hr_data_by_date(user.id, datetime)
-    process_hr_data(hr_data)
+   
     # log(f"hr_data:{hr_data}")
 
     datetime = "2019-02-28"
@@ -63,7 +61,7 @@ def process_user_data(user):
     # log(f"eye_data:{eye_data}")
     
 @log_func
-def get_processed_time_entries():   
+def get_yesterday_time_entries():   
     time_interval = CONF.PROCESSOR_TIME_INTERVAL
 
     today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -76,22 +74,44 @@ def get_processed_time_entries():
         yesterday += timedelta(seconds=time_interval)
 
     log(f"created {len(time_entries)} time entries")
-    teststop
+    return time_entries
 
 
 @log_func
-def process_hr_data(hr_data):
+def process_hr_data(user, hr_data):
     """ NOTE: making assumption that hr data is already sorted! """
 
-    hr_time_entries = hr_data[CONF.HR_DATA_KEYS.DATA][CONF.HR_DATA_KEYS.DATASET]
-    for entry in hr_time_entries:
-        log(entry)
-        teststop
+    hr_time_entries = hr_data[CONF.HR_DATA_KEYS.DATA][CONF.HR_DATA_KEYS.DATASET]    
+
+    for hr_entry in hr_time_entries:
+        log(f"hr_entry: {hr_entry}")
+        hr_time = datetime.strptime(hr_entry[CONF.HR_DATA_KEYS.TIME], "%H:%M:%S").time()
+        
+        
+        for processor_entry in user.time_entries:
+            processor_datetime = processor_entry.datetime
+            # log(f"processor_datetime: {processor_datetime}")
+            processor_time = processor_datetime.time()
+            log(f"processor_time: {processor_time} vs hr_time: {hr_time}")
+
+            if(processor_time <= hr_time):
+                log("processor_time <= hr_time")
+            else:
+                log("processor_time over hr_time!")
+                break
+        teststop    
+            
+        
 
 
 
-for entry in get_users():    
-    process_user_data(User(entry))
+for user_dict in get_users():  
+    process_user_data(
+        User(
+            user_dict[CONF.GET_USERS_KEYS.USER_ID_KEY],
+            user_dict[CONF.GET_USERS_KEYS.ACCESS_TOKEN_KEY]
+            )
+        )
     
 
 
