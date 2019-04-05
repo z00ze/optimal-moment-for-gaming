@@ -2,6 +2,7 @@ import json
 class Config:
     def __init__(self):
         config = json.loads(open('config.json', 'r').read())
+        self.PROCESSOR_TIME_INTERVAL = int(config["PROCESSOR_TIME_INTERVAL"])
         self.GET_USERS_KEYS = Users(config["GET_USERS"])
         self.HR_DATA_KEYS = HrData(config["HR_DATA"])
 

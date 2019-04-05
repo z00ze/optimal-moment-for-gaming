@@ -9,7 +9,7 @@ import time
 import dateutil.parser
 import errorhandler as err
 
-from credentials import Credentials
+from Classes.Credentials import Credentials
 CRED = Credentials()
 
 # MYSQL CONNECTION
@@ -48,9 +48,8 @@ query_eyetracker_data_by_date = ("SELECT data FROM eyetracker WHERE user_id = %s
 # query_addBenchmark = ("INSERT IGNORE INTO benchmark (uniqueid, datetime, user_id, result) VALUES (%s, %s, %s, %s)")                   
 
 def init_connection(func):
-    print(f"init_connection before function: {func.__name__}")
-
     def wrapper(*args, **kwargs):
+        print(f"init_connection before function: {func.__name__}")
         cnx = mysql.connector.connect(user=CRED.user, database='fitbittokens', password=CRED.password)
         cursor = cnx.cursor(buffered=True)
         kwargs["cnx"] = cnx

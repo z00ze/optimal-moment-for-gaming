@@ -1,7 +1,14 @@
 {
+    "PROCESSOR_TIME_INTERVAL":"1",
     "GET_USERS":{
         "USERS_KEY":"users",
         "USER_ID_KEY":"user_id",
         "ACCESS_TOKEN_KEY":"access_token"
+    },
+    "HR_DATA":{
+        "DATA_KEY":"data",
+        "DATASET_KEY":"dataset",
+        "TIME_KEY":"time",
+        "VALUE_KEY":"value"
     }
 }
