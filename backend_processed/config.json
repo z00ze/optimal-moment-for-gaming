@@ -1,5 +1,7 @@
 {
-    "PROCESSOR_TIME_INTERVAL":"1",
+    "PROCESSOR_TIME_INTERVAL":1, 
+    "DEFAULT_HOURS_TO_ZERO_EFF":16,
+    "SLEEP_DATA_DATE_FORMAT":"%Y-%m-%dT%H:%M:%S",
     "GET_USERS":{
         "USERS_KEY":"users",
         "USER_ID_KEY":"user_id",
@@ -10,5 +12,12 @@
         "DATASET_KEY":"dataset",
         "TIME_KEY":"time",
         "VALUE_KEY":"value"
+    },
+    "SLEEP_DATA":{
+        "DATA_KEY":"data",
+        "MAIN_SLEEP_KEY":"isMainSleep",
+        "START_TIME_KEY":"startTime",
+        "END_TIME_KEY":"endTime",
+        "EFFICIENCY_KEY":"efficiency"
     }
 }

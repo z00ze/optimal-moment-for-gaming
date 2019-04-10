@@ -6,7 +6,6 @@ import json
 from datetime import datetime
 import hashlib
 import time
-import dateutil.parser
 import errorhandler as err
 
 from Classes.Credentials import Credentials
@@ -49,7 +48,7 @@ query_eyetracker_data_by_date = ("SELECT data FROM eyetracker WHERE user_id = %s
 
 def init_connection(func):
     def wrapper(*args, **kwargs):
-        print(f"init_connection before function: {func.__name__}")
+        print(f"\n ## init_connection to db before function: {func.__name__} ## ")
         cnx = mysql.connector.connect(user=CRED.user, database='fitbittokens', password=CRED.password)
         cursor = cnx.cursor(buffered=True)
         kwargs["cnx"] = cnx
@@ -111,7 +110,7 @@ def get_hr_data_by_date(user_id, datetime, cnx=None, cursor=None):
         maindata = (user_id, datetime)
         cursor.execute(query_get_hr_data_by_date, maindata)
         cnx.commit()
-        
+
         for val, in cursor:
             return {"success": True, "data" : json.loads(val)}       
         
