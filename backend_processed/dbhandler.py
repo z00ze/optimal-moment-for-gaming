@@ -31,7 +31,7 @@ query_get_hr_data_by_date = ("SELECT data FROM heartrate_detailed WHERE user_id 
 query_eyetracker_data_by_date = ("SELECT data FROM eyetracker WHERE user_id = %s and datetime = %s")
 
 # predicted time entries
-query_predicted_time_entries_by_user = ("SELECT * FROM fitbittokens.processed_test WHERE user_id = %s and NOT predict")
+query_predicted_time_entries_by_user = ("SELECT * FROM fitbittokens.processed_test WHERE user_id = %s and predict ORDER BY datetime")
 
 # query_getSleepCountDup = ("SELECT count(*) FROM sleepdata WHERE user_id = %s and datetime = %s and uniqueid != %s")
 # query_deleteSleep = ("DELETE FROM sleepdata WHERE user_id = %s and datetime = %s")
@@ -141,7 +141,8 @@ def get_eye_tracker_data_by_date(user_id, datetime, cnx=None, cursor=None):
 
 
 @init_connection
-def get_predicted_data_entries(user_id, cnx=None, cursor=None):    
+def get_predicted_data_entries(user_id, cnx=None, cursor=None):
+    # TODO: how to ensure all rows are fetched? 
 
     try:
         maindata = (user_id,)
