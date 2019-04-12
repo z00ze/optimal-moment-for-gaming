@@ -4,5 +4,3 @@ class SleepEvent:
         self.sleeping = sleeping
         self.efficiency = efficiency
         self.main_sleep = main_sleep
-
-        print(f"New SleepEvent object created with end_time: {end_time}, sleeping: {sleeping}, efficiency: {efficiency} and main_sleep:{main_sleep}")
