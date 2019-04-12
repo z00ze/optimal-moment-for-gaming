@@ -10,7 +10,7 @@ import json
 from Classes.User import User
 from Classes.Config import Config
 from Classes.DataEntry import DataEntry
-from Classes.SleepData import SleepData
+from Classes.SleepEvent import SleepEvent
 
 from datetime import datetime, timedelta
 
@@ -48,20 +48,39 @@ def get_users():
     return users
 
 @log_func
-def process_user_data(user):    
-    log(f"got user with id:{user.id} and token: {user.token}")
-    user.time_entries = get_yesterday_time_entries()
+def process_user_data(user):
+    """
+    TODO:
+        I - process sleep
+            1) fetch previous unpredicted data
+                1.1 - if query results None - create entries older entries            
+            2) add yesterday entries to previous data
+            3) process sleep data
+                4.1 - update previous data
+                4.2 - continue with yesterdays data
+                4.3 - generate today's predicted data
+        
+        II - process HR data
+            4) process hr data
 
-    datetime = "2019-03-27" # TODO: change 
-    hr_data =  dbhandler.get_hr_data_by_date(user.id, datetime)        
-    process_hr_data(user, hr_data)    
+        III - eye tracker etc
+            
+            5) eye tracker -data ? 
+            6) benchmark data ? 
+            7) omfg - value ? 
+    NOTE: should omfg value and benchmark data be calculated separately?"""
 
-    datetime = "2019-03-25"  # TODO: change 
-    sleep_data = dbhandler.get_sleep_data_by_date(user.id, datetime)
+    get_user_data_entries(user)
+   
+    
+    
+
+    sleep_data = dbhandler.get_sleep_data_by_date(user.id, yesterday_date)
     # log(f"sleep_data:{sleep_data}")    
     process_sleep_data(user, sleep_data)
 
-   
+    hr_data =  dbhandler.get_hr_data_by_date(user.id, yesterday_date)        
+    process_hr_data(user, hr_data) 
     # # log(f"hr_data:{hr_data}")
 
     # datetime = "2019-02-28"
@@ -79,6 +98,49 @@ def process_user_data(user):
     
     log(f"got {hr_values} updated hr entries")
  
+@log_func
+def get_user_data_entries(user):
+
+    user_data_entries = []
+
+    predicted_query_result = dbhandler.get_predicted_data_entries(user.id)
+    predicted_data_entries = []
+
+    if(predicted_query_result[CONF.DATABASE_RESULT_SUCCESS_KEY]):
+        predicted_data_entries = predicted_query_result[CONF.DATABASE_RESULT_DATA_KEY]
+        log(f"got {len(predicted_data_entries)} predicted_data_entries.")
+        user_data_entries = generate_data_entries_from_predicted_results(predicted_data_entries)        
+    else:
+        log("got no predicted_data_entries.")
+    teststop
+    yesterday_date = datetime.strftime(datetime.now()-timedelta(days=1), CONF.DATABASE_DATE_FORMAT)
+
+    log(f"got user with id:{user.id} and token: {user.token}")
+    user.time_entries = get_yesterday_time_entries()
+
+@log_func
+def generate_data_entries_from_predicted_results(predicted_data_entries):
+    result_list = []
+
+    for entry in predicted_data_entries:               
+        
+        data_entry = DataEntry(
+            entry[CONF.DATABASE_RESULT_INDEXES.DATETIME],
+            unique_id = entry[CONF.DATABASE_RESULT_INDEXES.UNIQUE_ID],
+            sleep_eff = entry[CONF.DATABASE_RESULT_INDEXES.SLEEP_EFF],            
+            sleeping = entry[CONF.DATABASE_RESULT_INDEXES.SLEEPING],
+            main_sleep = entry[CONF.DATABASE_RESULT_INDEXES.MAIN_SLEEP],
+            hr_value = entry[CONF.DATABASE_RESULT_INDEXES.HR_VALUE],
+            eye_data = entry[CONF.DATABASE_RESULT_INDEXES.EYETRACK],            
+            dynamic_eff = entry[CONF.DATABASE_RESULT_INDEXES.DYNAMIC_EFF],
+            omfg = entry[CONF.DATABASE_RESULT_INDEXES.OMFG],
+            predict = entry[CONF.DATABASE_RESULT_INDEXES.PREDICT]
+        )
+        result_list.append(data_entry)
+
+    log(f"generated {len(result_list)} data entries from predicted results")
+    return result_list
+       
     
 @log_func
 def get_yesterday_time_entries():   
@@ -113,7 +175,7 @@ def get_sleep_events(sleep_list):
 
         # Adding entry for first event: going to sleep. 
         sleep_events.append(
-            SleepData(going_to_sleep_time, False, None, False)
+            SleepEvent(going_to_sleep_time, False, None, False)
         )
 
         main_sleep = sleep_values[CONF.SLEEP_DATA_KEYS.MAIN_SLEEP]
@@ -127,12 +189,12 @@ def get_sleep_events(sleep_list):
 
         # Adding entry for second event: waking up. 
         sleep_events.append(
-            SleepData(waking_up_time, True, efficiency, main_sleep)
+            SleepEvent(waking_up_time, True, efficiency, main_sleep)
         )
     
     # Adding last sleep event for predicted values 
     sleep_events.append(
-        SleepData(None, False, 0, False)
+        SleepEvent(None, False, 0, False)
     )
  
     log("Generated sleep events:")

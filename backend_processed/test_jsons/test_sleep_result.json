@@ -1,43 +1,35 @@
 {
     "success": True,
-    "data": [
-        {
-            "type": "stages",
-            "logId": 21704116573,
-            "endTime": "2019-04-09T08:22:30.000",
-            "duration": 32700000,
-            "infoCode": 0,
-            "startTime": "2019-04-08T23:17:30.000",
-            "timeInBed": 545,
-            "efficiency": 89,
-            "dateOfSleep": "2019-04-09",
-            "isMainSleep": True,
-            "levels":{
-                "data":[]
-            },
-            "minutesAwake": 77,
-            "minutesAsleep": 468,
-            "minutesAfterWakeup": 3,
-            "minutesToFallAsleep": 0
-        },
-        {
-            "type": "stages",
-            "logId": 21704116573,
-            "endTime": "2019-04-09T18:05:30.000",
-            "duration": 32700000,
-            "infoCode": 0,
-            "startTime": "2019-04-09T16:00:30.000",
-            "timeInBed": 545,
-            "efficiency": 75,
-            "dateOfSleep": "2019-04-09",
-            "isMainSleep": False,
-            "levels":{
-                "data":[]
-            },
-            "minutesAwake": 77,
-            "minutesAsleep": 468,
-            "minutesAfterWakeup": 3,
-            "minutesToFallAsleep": 0
-        }
-    ]
+    "data": 
+    [{
+        "dateOfSleep": "2019-04-09",
+        "duration": 32700000,
+        "efficiency": 89,
+        "endTime": "2019-04-11T08:22:30.000",
+        "infoCode": 0,
+        "isMainSleep": "True",
+        "logId": 21704116573,
+        "minutesAfterWakeup": 3,
+        "minutesAsleep": 468,
+        "minutesAwake": 77,
+        "minutesToFallAsleep": 0,
+        "startTime": "2019-04-10T23:17:30.000",
+        "timeInBed": 545,
+        "type": "stages"
+    }, {
+        "dateOfSleep": "2019-04-09",
+        "duration": 32700000,
+        "efficiency": 75,
+        "endTime": "2019-04-11T18:05:30.000",
+        "infoCode": 0,
+        "isMainSleep": "False",
+        "logId": 21704116573,
+        "minutesAfterWakeup": 3,
+        "minutesAsleep": 468,
+        "minutesAwake": 77,
+        "minutesToFallAsleep": 0,
+        "startTime": "2019-04-11T16:00:30.000",
+        "timeInBed": 545,
+        "type": "stages"
+    }]
 }

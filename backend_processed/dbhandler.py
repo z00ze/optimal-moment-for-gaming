@@ -30,6 +30,9 @@ query_get_hr_data_by_date = ("SELECT data FROM heartrate_detailed WHERE user_id 
 # eye tracker
 query_eyetracker_data_by_date = ("SELECT data FROM eyetracker WHERE user_id = %s and datetime = %s")
 
+# predicted time entries
+query_predicted_time_entries_by_user = ("SELECT * FROM fitbittokens.processed_test WHERE user_id = %s and NOT predict")
+
 # query_getSleepCountDup = ("SELECT count(*) FROM sleepdata WHERE user_id = %s and datetime = %s and uniqueid != %s")
 # query_deleteSleep = ("DELETE FROM sleepdata WHERE user_id = %s and datetime = %s")
 
@@ -124,6 +127,7 @@ def get_eye_tracker_data_by_date(user_id, datetime, cnx=None, cursor=None):
     
     try:
         maindata = (user_id, datetime)
+        print(f"maindata:{maindata}")
         cursor.execute(query_eyetracker_data_by_date, maindata)
         cnx.commit()
         
@@ -133,4 +137,21 @@ def get_eye_tracker_data_by_date(user_id, datetime, cnx=None, cursor=None):
         return err.fail()
     
     except Exception as e:
-        return err.fail(str(e))        
+        return err.fail(str(e))
+
+
+@init_connection
+def get_predicted_data_entries(user_id, cnx=None, cursor=None):    
+
+    try:
+        maindata = (user_id,)
+        cursor.execute(query_predicted_time_entries_by_user, maindata)
+        cnx.commit()
+        result = cursor.fetchall()   
+        if(result):            
+            return {"success": True, "data" : result}       
+        
+        return err.fail("No predicted data found.")
+    
+    except Exception as e:
+        return err.fail(str(e))

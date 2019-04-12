@@ -2,22 +2,36 @@
     "PROCESSOR_TIME_INTERVAL":1, 
     "DEFAULT_HOURS_TO_ZERO_EFF":16,
     "SLEEP_DATA_DATE_FORMAT":"%Y-%m-%dT%H:%M:%S",
+    "DATABASE_DATE_FORMAT":"%Y-%m-%d",
+    "DATABASE_RESULT_DATA_KEY":"data",
+    "DATABASE_RESULT_SUCCESS_KEY":"success",
     "GET_USERS":{
         "USERS_KEY":"users",
         "USER_ID_KEY":"user_id",
         "ACCESS_TOKEN_KEY":"access_token"
     },
-    "HR_DATA":{
-        "DATA_KEY":"data",
+    "HR_DATA":{        
         "DATASET_KEY":"dataset",
         "TIME_KEY":"time",
         "VALUE_KEY":"value"
     },
-    "SLEEP_DATA":{
-        "DATA_KEY":"data",
+    "SLEEP_DATA":{        
         "MAIN_SLEEP_KEY":"isMainSleep",
         "START_TIME_KEY":"startTime",
         "END_TIME_KEY":"endTime",
         "EFFICIENCY_KEY":"efficiency"
+    },
+    "DATABASE_RESULT_COLUMN_INDEXES":{
+        "UNIQUE_ID":0,
+        "USER_ID":1,
+        "DATETIME":2,
+        "SLEEP_EFF":3,
+        "SLEEPING":4,
+        "MAIN_SLEEP":5,
+        "HR_VALUE":6,
+        "EYETRACK":7,
+        "DYNAMIC_EFF":8,
+        "OMFG":9,
+        "PREDICT":10
     }
 }
