@@ -31,7 +31,12 @@ query_get_hr_data_by_date = ("SELECT data FROM heartrate_detailed WHERE user_id 
 query_eyetracker_data_by_date = ("SELECT data FROM eyetracker WHERE user_id = %s and datetime = %s")
 
 # predicted time entries
-query_predicted_time_entries_by_user = ("SELECT * FROM fitbittokens.processed_test WHERE user_id = %s and predict ORDER BY datetime")
+query_predicted_time_entries_by_user = ("SELECT * FROM fitbittokens.processed_test WHERE user_id = %s and  datetime >= %s and predict ORDER BY datetime")
+
+# confirm predicted values before datetime
+confirm_predicted_values_before_datetime = ("UPDATE fitbittokens.processed_test SET predict = 0 WHERE user_id = %s and datetime < %s")
+
+insert_processed_row = "INSERT IGNORE INTO fitbittokens.processed_test (COLUMNS) VALUES (PARAMETERS)"
 
 # query_getSleepCountDup = ("SELECT count(*) FROM sleepdata WHERE user_id = %s and datetime = %s and uniqueid != %s")
 # query_deleteSleep = ("DELETE FROM sleepdata WHERE user_id = %s and datetime = %s")
@@ -141,11 +146,11 @@ def get_eye_tracker_data_by_date(user_id, datetime, cnx=None, cursor=None):
 
 
 @init_connection
-def get_predicted_data_entries(user_id, cnx=None, cursor=None):
+def get_predicted_data_entries(user_id, datetime_from, cnx=None, cursor=None):
     # TODO: how to ensure all rows are fetched? 
 
     try:
-        maindata = (user_id,)
+        maindata = (user_id, datetime_from)
         cursor.execute(query_predicted_time_entries_by_user, maindata)
         cnx.commit()
         result = cursor.fetchall()   
@@ -156,3 +161,49 @@ def get_predicted_data_entries(user_id, cnx=None, cursor=None):
     
     except Exception as e:
         return err.fail(str(e))
+
+@init_connection
+def confirm_predicted_values_before_time(user_id, datetime, cnx=None, cursor=None):
+    
+    try:
+        maindata = (user_id, datetime)        
+        cursor.execute(confirm_predicted_values_before_datetime, maindata)        
+        cnx.commit()
+        return {"success": True}
+    
+    except Exception as e:
+        return err.fail(str(e))
+
+
+@init_connection
+def update_processed_entries(user_id, data_entries,cnx=None, cursor=None):
+    global insert_processed_row
+    print(f"going to update {len(data_entries)} rows")
+    try:
+        for entry in data_entries:
+            columns, values = entry.get_values_to_sql_query(user_id)
+            parameters = []
+
+            for i in range(len(columns)):
+                parameters.append("%s")
+            parameters = ", ".join(parameters)
+            query = insert_processed_row.replace("COLUMNS", ", ".join(columns)) 
+            query = query.replace("PARAMETERS", parameters)       
+            # print(query)
+            
+            
+            maindata = []
+            maindata.extend(values)
+            maindata = tuple(maindata)
+            
+            # print(maindata)        
+            cursor.execute(query, maindata)        
+            cnx.commit()
+        
+        print("database updated")
+        
+
+    except Exception as e:
+        return err.fail(str(e))
+    
+     

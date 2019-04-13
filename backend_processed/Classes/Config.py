@@ -12,7 +12,8 @@ class Config:
         self.GET_USERS_KEYS = Users(config["GET_USERS"])
         self.HR_DATA_KEYS = HrData(config["HR_DATA"])
         self.SLEEP_DATA_KEYS = SleepData(config["SLEEP_DATA"])        
-        self.DATABASE_RESULT_INDEXES = DataBaseResultIndexes(config["DATABASE_RESULT_COLUMN_INDEXES"])
+        self.DATABASE_RESULT_INDEXES = DatabaseResultIndexes(config["DATABASE_RESULT_COLUMN_INDEXES"])
+        self.DATABASE_COLUMN_NAMES = DatabaseColumnNames(config["DATABASE_COLUMN_NAMES"])
 
 class SleepData:
     def __init__(self, sleep_data_dict):        
@@ -33,7 +34,7 @@ class Users:
         self.USER_ID_KEY = user_dict["USER_ID_KEY"]
         self.ACCESS_TOKEN_KEY = user_dict["ACCESS_TOKEN_KEY"]
 
-class DataBaseResultIndexes:
+class DatabaseResultIndexes:
     def __init__(self, result_dict):        
         self.UNIQUE_ID = result_dict["UNIQUE_ID"]
         self.USER_ID = result_dict["USER_ID"]
@@ -46,3 +47,17 @@ class DataBaseResultIndexes:
         self.DYNAMIC_EFF = result_dict["DYNAMIC_EFF"]
         self.OMFG = result_dict["OMFG"]
         self.PREDICT = result_dict["PREDICT"]
+
+class DatabaseColumnNames:
+    def __init__(self, column_dict):
+        self.UNIQUE_ID = column_dict["UNIQUE_ID"]
+        self.USER_ID = column_dict["USER_ID"]
+        self.DATETIME = column_dict["DATETIME"]
+        self.SLEEP_EFF = column_dict["SLEEP_EFF"]
+        self.SLEEPING = column_dict["SLEEPING"]
+        self.MAIN_SLEEP = column_dict["MAIN_SLEEP"]
+        self.HR_VALUE = column_dict["HR_VALUE"]
+        self.EYETRACK = column_dict["EYETRACK"]
+        self.DYNAMIC_EFF = column_dict["DYNAMIC_EFF"]
+        self.OMFG = column_dict["OMFG"]
+        self.PREDICT = column_dict["PREDICT"]

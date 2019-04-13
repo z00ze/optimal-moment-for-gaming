@@ -33,5 +33,18 @@
         "DYNAMIC_EFF":8,
         "OMFG":9,
         "PREDICT":10
+    },
+    "DATABASE_COLUMN_NAMES":{
+        "UNIQUE_ID":"unique_id",
+        "USER_ID":"user_id",
+        "DATETIME":"datetime",
+        "SLEEP_EFF":"sleep_eff",
+        "SLEEPING":"sleeping",
+        "MAIN_SLEEP":"main_sleep",
+        "HR_VALUE":"heartrate",
+        "EYETRACK":"eyetrack",
+        "DYNAMIC_EFF":"dynamic_eff",
+        "OMFG":"omfg",
+        "PREDICT":"predict"
     }
 }
