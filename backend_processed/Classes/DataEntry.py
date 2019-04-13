@@ -87,9 +87,8 @@ class DataEntry:
             columns.append(CONF.DATABASE_COLUMN_NAMES.OMFG)
             values.append(self.omfg)
         
-        if(self.predict):
-            columns.append(CONF.DATABASE_COLUMN_NAMES.PREDICT)
-            values.append(self.predict)
+        columns.append(CONF.DATABASE_COLUMN_NAMES.PREDICT)
+        values.append(True if self.predict else False)
             
         return columns, values
 

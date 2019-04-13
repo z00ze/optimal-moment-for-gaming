@@ -192,8 +192,8 @@ def process_sleep_data(user, raw_sleep_data):
         current_user_data_entry = user.data_entries[user_data_entry_idx]
 
         sleep_eff = int(previous_sleep_event.efficiency) if previous_sleep_event.efficiency else None
-        sleeping = previous_sleep_event.sleeping
-        main_sleep = previous_sleep_event.main_sleep
+        sleeping = sleep_event.sleeping
+        main_sleep = sleep_event.main_sleep
         predict = sleep_event.predict
         event_end_time = sleep_event.end_time
 
