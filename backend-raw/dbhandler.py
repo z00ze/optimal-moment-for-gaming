@@ -46,13 +46,13 @@ query_setTrackerdata = ("INSERT IGNORE INTO eyetracker (uniqueid, user_id, datet
 query_addTrackerdata = ("UPDATE eyetracker SET data = JSON_ARRAY_APPEND(data, '$', CAST(%s AS JSON)) WHERE uniqueid = %s")
 
 # Benchmark
-query_addBenchmark = ("INSERT IGNORE INTO benchmark (uniqueid, datetime, user_id, result) VALUES (%s, %s, %s, %s)")
+query_addBenchmark = ("INSERT IGNORE INTO benchmark (uniqueid, datetime, user_id, accuracy, averageReactionTime, memoryTestGrade, diaryEntry) VALUES (%s, %s, %s, %s, %s, %s, %s)")
 
 # Get users
 query_getUsers = ("SELECT user_id, access_token FROM tokens")
 
 # Return data from processed
-query_getProcessed = ("SELECT datetime, omfg, effiency, heartrate, eyetrack, user_id, predict FROM fitbittokens.processed WHERE user_id = %s AND datetime BETWEEN %s AND %s AND UNIX_TIMESTAMP(datetime) mod %s = 0 ORDER BY datetime")
+query_getProcessed = ("SELECT user_id, datetime, sleep_eff, sleeping, main_sleep, heartrate, eyetrack, dynamic_eff, omfg, predict FROM processed_test WHERE user_id = %s AND datetime BETWEEN %s AND %s AND UNIX_TIMESTAMP(datetime) mod %s = 0 ORDER BY datetime")
 
 ##################################################################
 # Processed                                                      #
@@ -61,6 +61,12 @@ query_getProcessed = ("SELECT datetime, omfg, effiency, heartrate, eyetrack, use
 def getProcessed(user_id, date_from, date_to, interval, cnx, cursor):
     
     global query_getProcessed
+    
+    date_from_in = date_from
+    date_to_in = date_to
+    
+    date_from = datetime.strptime(date_from, "%B %d, %Y %H:%M:%S")
+    date_to = datetime.strptime(date_to, "%B %d, %Y %H:%M:%S")
     
     maindata = (user_id, date_from, date_to, int(interval))
     
@@ -71,12 +77,23 @@ def getProcessed(user_id, date_from, date_to, interval, cnx, cursor):
         if(cursor.rowcount == 0):
             return err.fail('no data for this period')
         
-        data = {"success": True, "time_from": str(date_from), "time_to": str(date_to), "datapoints":[]}
+        data = {"success": True, "time_from": str(date_from_in), "time_to": str(date_to_in), "datapoints":[]}
         
-        for (datetime, omfg, effiency, heartrate, eyetracker, user_id, predict) in cursor:
+        for (user_id, dt, sleep_eff, sleeping, main_sleep, heartrate, eyetrack, dynamic_eff, omfg, predict) in cursor:
+            if(eyetrack == None):
+                eyetrack = "{}"
             data['datapoints'].append(
             {
-                "datetime":str(datetime), "omfg":omfg, "effiency":effiency, "heartrate":heartrate, "eyetracker":json.loads(eyetracker), "user_id":user_id, "predict":predict    
+                "user_id": user_id,
+                "datetime": dt.strftime("%B %d, %Y %H:%M:%S"),
+                "sleep_eff": sleep_eff,
+                "sleeping": sleeping,
+                "main_sleep": main_sleep,
+                "heartrate": heartrate,
+                "eyetrack": json.loads(eyetrack),
+                "dynamic_eff": dynamic_eff,
+                "omfg": omfg,
+                "predict": predict
             }
             )
         return data
@@ -354,9 +371,10 @@ def addBenchmark(data, cnx, cursor):
     
     try:
         
-        data['unique_id'] = str(hashlib.sha256(bytes(data.get('user_id','') + json.dumps(data.get('datetime','')), 'utf-8')).hexdigest())
-        
-        maindata = (data['unique_id'], data['datetime'], data['user_id'], data['result'])
+        data['unique_id'] = str(hashlib.sha256(bytes(data['userId'] + json.dumps(data['data']['timeStamp']), 'utf-8')).hexdigest())
+        data['data']['timeStamp'] = datetime.strptime(data['data']['timeStamp'], "%B %d, %Y %H:%M:%S")
+        #(uniqueid, datetime, user_id, accuracy, averageReactionTime, memoryTestGrade, diaryEntry)
+        maindata = (data['unique_id'], data['data']['timeStamp'], data['userId'], data['data']['accuracy'], data['data']['averageReactionTime'], data['data']['memoryTestGrade'], data['data']['diaryEntry'])
         cursor.execute(query_addBenchmark, maindata)
         cnx.commit()
         

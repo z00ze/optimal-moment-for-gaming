@@ -113,7 +113,7 @@ class omfg(object):
                 return err.fail(str(e))
         
         if(var == 'processed' and user_id is not None and time_from is not None and time_to is not None and interval is not None):
-            print(interval)
+            
             cnx = mysql.connector.connect(user=user, database='fitbittokens', password=password)
             cursor = cnx.cursor(buffered=True)
             try:
